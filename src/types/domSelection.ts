@@ -2,6 +2,8 @@
 export interface ElementInfo {
   /** HTML start tag of the element */
   startTag: string;
+  /** HTML element's computed style */
+  computedStyle: CSSStyleDeclaration;
   /** Array of indices representing the path from root to this element */
   path: number[];
   /** Child nodes in the element tree */
@@ -24,6 +26,7 @@ export const DOM_SELECTION_EVENTS = {
   ELEMENT_SELECTED: 'ELEMENT_SELECTED',
   ELEMENT_UNSELECTED: 'ELEMENT_UNSELECTED',
   CLEAR_SELECTION: 'CLEAR_SELECTION',
+  UPDATE_ELEMENT_STYLE: 'UPDATE_ELEMENT_STYLE',
   TOGGLE_SELECTION_MODE: 'TOGGLE_SELECTION_MODE',
 } as const;
 

@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { DOMSelector } from '../components/DOMSelector';
 import { SettingsPanel } from '../components/SettingsPanel';
 import { ShareCapture } from '../components/ShareCapture';
-import { TagInjection } from '../components/TagInjection';
+import { StyleEditor } from '../components/StyleEditor';
 import { useConnectionManager } from '../lib/connectionManager';
 import '../styles/common.css';
 import { DOM_SELECTION_EVENTS, ElementInfo, UI_EVENTS } from '../types/domSelection';
@@ -174,7 +174,7 @@ export const App = () => {
             {showShareCapture && (
               <ShareCapture onClose={handleShareClose} initialSelectedElement={selectedElement} />
             )}
-            <TagInjection />
+            <StyleEditor />
           </div>
         )}
       </div>

@@ -12,6 +12,7 @@ export type MessageType =
   | 'ELEMENT_UNSELECTED'
   | 'SELECT_ELEMENT'
   | 'CLEAR_SELECTION'
+  | 'UPDATE_ELEMENT_STYLE'
   | 'CAPTURE_TAB'
   | 'CAPTURE_TAB_RESULT'
   | 'DEBUG'; // Special message type for debugging purposes - handlers will receive all messages for logging/monitoring
