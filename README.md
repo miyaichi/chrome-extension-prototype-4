@@ -16,12 +16,12 @@ DOM Workbench is a Chrome extension that makes it easy to perform DOM operations
 
 1. Clone the repository
 ```bash
-git clone https://github.com/miyaichi/chrome-extension-prototype-3.git
+git clone https://github.com/miyaichi/chrome-extension-prototype-4.git
 ```
 
 2. Install dependencies
 ```bash
-cd chrome-extension-prototype-3
+cd chrome-extension-prototype-4
 npm install
 ```
 
