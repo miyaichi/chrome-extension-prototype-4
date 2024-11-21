@@ -46,7 +46,7 @@ export const ShareCapture: React.FC<ShareCaptureProps> = ({ onClose, initialSele
           captureUrl: payload.url || null,
         }));
       } else {
-        console.error('Capture failed:', payload.error);
+        logger.error('Capture failed:', payload.error);
       }
     });
 

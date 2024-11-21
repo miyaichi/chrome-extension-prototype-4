@@ -30,10 +30,17 @@ export const DOM_SELECTION_EVENTS = {
   TOGGLE_SELECTION_MODE: 'TOGGLE_SELECTION_MODE',
 } as const;
 
+/** Constants for UI related events */
 export const UI_EVENTS = {
   SIDE_PANEL_CLOSED: 'SIDE_PANEL_CLOSED',
   CAPTURE_TAB: 'CAPTURE_TAB',
   CAPTURE_TAB_RESULT: 'CAPTURE_TAB_RESULT',
+} as const;
+
+/** Constants for browser state change events */
+export const BROWSER_EVENTS = {
+  TAB_ACTIVATED: 'TAB_ACTIVATED',
+  TAB_UPDATED: 'TAB_UPDATED',
 } as const;
 
 export type DOMSelectionEvent = (typeof DOM_SELECTION_EVENTS)[keyof typeof DOM_SELECTION_EVENTS];

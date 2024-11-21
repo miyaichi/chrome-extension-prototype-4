@@ -98,7 +98,7 @@ chrome.runtime.onConnect.addListener((port) => {
 
 // Message subscription
 subscribe('TOGGLE_SELECTION_MODE', (message: Message<SelectionModePayload>) => {
-  logger.log('Selection mode changed:', message.payload.enabled);
+  logger.debug('Selection mode changed:', message.payload.enabled);
   selectionModeEnabled = message.payload.enabled;
   updateCursorStyle(selectionModeEnabled);
 
@@ -112,7 +112,7 @@ subscribe<SelectElementPayload>(
   (message: Message<SelectElementPayload>) => {
     const element = getElementByPath(message.payload.path);
     if (!element) {
-      console.warn('Failed to find element with path:', message.payload.path);
+      logger.warn('Failed to find element with path:', message.payload.path);
       return;
     }
 

@@ -3,19 +3,30 @@ import { ConnectionManager, Message } from './lib/connectionManager';
 import { Logger } from './lib/logger';
 
 class BackgroundService {
+  private static instance: BackgroundService | null = null;
   private manager: ConnectionManager;
   private logger = new Logger('background');
 
   constructor() {
-    this.logger.debug('Initializing BackgroundService...');
     this.manager = ConnectionManager.getInstance();
+
+    if (BackgroundService.instance) {
+      return BackgroundService.instance;
+    }
+    BackgroundService.instance = this;
+
+    this.initialize();
+  }
+
+  private async initialize() {
+    this.logger.debug('Initializing BackgroundService...');
     this.logger.debug('Setting background context...');
     this.manager.setContext('background');
     this.logger.debug('Setting up event handlers...');
-    this.setupEventHandlers();
+    await this.setupEventHandlers();
     this.logger.log('BackgroundService initialization complete');
 
-    this.setupSidePanel();
+    await this.setupSidePanel();
   }
 
   /**
@@ -25,7 +36,7 @@ class BackgroundService {
     // Debugging message handler
     this.manager.subscribe('DEBUG', (message: Message) => {
       const timestamp = new Date(message.timestamp).toISOString();
-      this.logger.log(
+      this.logger.debug(
         `[${timestamp}] ${message.source} -> ${message.target || 'broadcast'}: ${message.type}`,
         message.payload
       );
@@ -43,6 +54,7 @@ class BackgroundService {
     // Browser events
     chrome.action.onClicked.addListener(this.toggleSidePanel);
     chrome.tabs.onActivated.addListener(this.handleTabActivated.bind(this));
+    chrome.tabs.onUpdated.addListener(this.handleTabUpdated.bind(this));
   }
 
   /**
@@ -90,14 +102,55 @@ class BackgroundService {
   private async handleTabActivated({ tabId, windowId }: chrome.tabs.TabActiveInfo) {
     try {
       const tab = await chrome.tabs.get(tabId);
-      await this.manager.sendMessage('TAB_ACTIVATED', {
-        tabId,
-        windowId,
-        url: tab.url,
-        title: tab.title,
-      });
+      this.logger.debug('Tab info retrieved:', tab);
+
+      if (tab) {
+        await this.manager.sendMessage('TAB_ACTIVATED', {
+          tabId,
+          windowId,
+          url: tab.url || '',
+          title: tab.title || '',
+        });
+        this.logger.debug('TAB_ACTIVATED message sent successfully');
+      }
     } catch (error) {
-      this.logger.error('Tab activation error:', error);
+      this.logger.error('Tab update handling error:', error);
+    }
+  }
+
+  /**
+   * Handles tab update events
+   */
+  private async handleTabUpdated(
+    tabId: number,
+    changeInfo: chrome.tabs.TabChangeInfo,
+    tab: chrome.tabs.Tab
+  ) {
+    // Check if the URL has changed or the page has completed loading
+    if (changeInfo.url || changeInfo.status === 'complete') {
+      try {
+        // Get the current tab information
+        const updatedTab = await chrome.tabs.get(tabId);
+
+        // Create the update payload
+        const updateInfo = {
+          tabId,
+          windowId: tab.windowId,
+          url: updatedTab.url,
+          title: updatedTab.title,
+          isReload: changeInfo.status === 'complete',
+          isUrlChange: Boolean(changeInfo.url),
+        };
+
+        // Log the update
+        this.logger.debug('Tab updated:', updateInfo);
+
+        // Broadcast the update to all listeners
+        await this.manager.sendMessage('TAB_UPDATED', updateInfo);
+        this.logger.debug('TAB_UPDATED message sent successfully');
+      } catch (error) {
+        this.logger.error('Tab update handling error:', error);
+      }
     }
   }
 
