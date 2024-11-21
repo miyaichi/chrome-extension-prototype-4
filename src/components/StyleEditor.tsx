@@ -1,4 +1,4 @@
-import { Check, Plus, Search, Trash2, X } from 'lucide-react';
+import { Check, Plus, Search, X } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { useConnectionManager } from '../lib/connectionManager';
 import { DOM_SELECTION_EVENTS, ElementInfo } from '../types/domSelection';
@@ -49,19 +49,6 @@ export const StyleEditor: React.FC = () => {
     });
   };
 
-  const handleStyleDelete = (property: string) => {
-    sendMessage(DOM_SELECTION_EVENTS.UPDATE_ELEMENT_STYLE, {
-      path: selectedElement?.path,
-      styles: {
-        [property]: '',
-      },
-    });
-
-    const newEditedStyles = { ...editedStyles };
-    delete newEditedStyles[property];
-    setEditedStyles(newEditedStyles);
-  };
-
   const handleAddStyle = () => {
     if (!newProperty.trim() || !newValue.trim()) return;
 
@@ -78,7 +65,7 @@ export const StyleEditor: React.FC = () => {
           <h2 className="card-title">Style Editor</h2>
         </div>
         <div className="style-editor-empty">
-          No element selected. Click an element to view and edit its styles.
+          You can check and modify the computed style of the selected element.
         </div>
       </div>
     );
@@ -119,13 +106,6 @@ export const StyleEditor: React.FC = () => {
                   className="style-editor-input"
                   title={editedStyles[property] ?? String(value)}
                 />
-                <button
-                  onClick={() => handleStyleDelete(property)}
-                  className="style-editor-button style-editor-button-danger"
-                  title="Remove style"
-                >
-                  <Trash2 size={16} />
-                </button>
               </React.Fragment>
             ))}
           </div>

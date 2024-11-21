@@ -67,7 +67,7 @@
 
 .style-editor-grid {
   display: grid;
-  grid-template-columns: 160px minmax(0, 1fr) 32px;
+  grid-template-columns: 160px minmax(0, 1fr);
   gap: 8px;
   align-items: center;
   padding-right: 4px;

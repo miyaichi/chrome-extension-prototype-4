@@ -49,6 +49,20 @@ export const DOMSelector: React.FC = () => {
     };
   }, []);
 
+  if (!selectedElement) {
+    return (
+      <div className="card">
+        <div className="card-header">
+          <h2 className="card-title">DOM Selector</h2>
+        </div>
+        <div className="style-editor-empty">
+          No element is selected. Turn on Selection Mode and click on a component to display
+          information about it and edit its style.
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="card">
       <div className="card-header">
