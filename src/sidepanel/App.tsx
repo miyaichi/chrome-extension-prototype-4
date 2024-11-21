@@ -21,7 +21,6 @@ export const App = () => {
   const [showShareCapture, setShowShareCapture] = useState(false);
   const [selectedElement, setSelectedElement] = useState<ElementInfo | null>(null);
   const { sendMessage, subscribe } = useConnectionManager();
-  const [currentTabId, setCurrentTabId] = useState<number | null>(null);
   const logger = new Logger('SidePanel');
 
   // Cleanup
@@ -48,15 +47,6 @@ export const App = () => {
 
     sendMessage(UI_EVENTS.SIDE_PANEL_CLOSED, { timestamp: Date.now() });
   };
-
-  // Get current tab ID
-  useEffect(() => {
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      if (tabs[0]?.id) {
-        setCurrentTabId(tabs[0].id);
-      }
-    });
-  }, []);
 
   // Monitor visibility change
   useEffect(() => {
