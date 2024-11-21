@@ -1,10 +1,11 @@
 # chrome-extension-prototype-4
-DOM Workbench is a Chrome extension that makes it easy to perform DOM operations on web pages. It provides functions such as screen capturing of selected DOM elements, adding comments, and sharing in PDF or PPT format.
+DOM Workbench is a Chrome extension that makes it easy to perform DOM operations on web pages. It provides functions such as screen capturing of selected DOM elements, adding comments, edit computed styles, and sharing screen captures with comments in PDF or PPT format.
 
 ## Main features
 - Select DOM elements and display information
 - Screen capture and comment functions
 - Share screen capture with comments in PDF or PPT format
+- Edit the computed style of the selected element
 - Intuitive operation with side panel UI
 
 ## Technology stack
@@ -60,8 +61,8 @@ npm run build
 │   │   ├── SettingPanel.tsx     # Setting panel
 │   │   ├── ShareCapture.css
 │   │   ├── ShareCapture.tsx     # Share Screen Capture
-│   │   ├── TagInjection.css
-│   │   └── TagInjection.tsx     # Tag injection
+│   │   ├── StyleEditor.css
+│   │   └── StyleEditor.tsx      # Style editor
 │   ├── contentScript.ts         # Content script
 │   ├── lib/
 │   │   ├── connectionManager.ts # Connection manager
