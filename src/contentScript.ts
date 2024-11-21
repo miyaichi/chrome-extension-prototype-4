@@ -1,4 +1,5 @@
 import { ConnectionManager, Message, useConnectionManager } from './lib/connectionManager';
+import { Logger } from './lib/logger';
 import {
   DOM_SELECTION_EVENTS,
   SelectElementPayload,
@@ -12,6 +13,8 @@ interface ElementStyle {
   originalStyles: Partial<Pick<CSSStyleDeclaration, StyleProperty>>;
   element: HTMLElement;
 }
+
+const logger = new Logger('ContentScript');
 
 const styleMap = new Map<number, ElementStyle>();
 let currentTabId: number;
@@ -95,6 +98,7 @@ chrome.runtime.onConnect.addListener((port) => {
 
 // Message subscription
 subscribe('TOGGLE_SELECTION_MODE', (message: Message<SelectionModePayload>) => {
+  logger.log('Selection mode changed:', message.payload.enabled);
   selectionModeEnabled = message.payload.enabled;
   updateCursorStyle(selectionModeEnabled);
 
