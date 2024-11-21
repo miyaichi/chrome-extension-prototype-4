@@ -5,6 +5,7 @@ import { SettingsPanel } from '../components/SettingsPanel';
 import { ShareCapture } from '../components/ShareCapture';
 import { StyleEditor } from '../components/StyleEditor';
 import { useConnectionManager } from '../lib/connectionManager';
+import { Logger } from '../lib/logger';
 import '../styles/common.css';
 import { DOM_SELECTION_EVENTS, ElementInfo, UI_EVENTS } from '../types/domSelection';
 import './App.css';
@@ -16,9 +17,11 @@ export const App = () => {
   const [selectedElement, setSelectedElement] = useState<ElementInfo | null>(null);
   const { sendMessage, subscribe } = useConnectionManager();
   const [currentTabId, setCurrentTabId] = useState<number | null>(null);
+  const logger = new Logger('SidePanel');
 
   // Cleanup
   const cleanup = () => {
+    logger.log('Cleaning up');
     if (isSelectionMode) {
       setIsSelectionMode(false);
       sendMessage(DOM_SELECTION_EVENTS.TOGGLE_SELECTION_MODE, {
@@ -53,11 +56,13 @@ export const App = () => {
   useEffect(() => {
     const handleTabChange = (activeInfo: chrome.tabs.TabActiveInfo) => {
       if (currentTabId !== null && activeInfo.tabId !== currentTabId) {
+        logger.log('Tab changed, cleaning up');
         cleanup();
         setCurrentTabId(activeInfo.tabId);
       }
     };
 
+    logger.log('Monitoring tab change');
     chrome.tabs.onActivated.addListener(handleTabChange);
 
     return () => {
@@ -69,10 +74,12 @@ export const App = () => {
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.hidden) {
+        logger.log('Document hidden, cleaning up');
         cleanup();
       }
     };
 
+    logger.log('Monitoring visibility change');
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     // Monitor connection to the Chrome extension
@@ -90,6 +97,7 @@ export const App = () => {
     const unsubscribe = subscribe(
       DOM_SELECTION_EVENTS.ELEMENT_SELECTED,
       (message: { payload: { elementInfo: ElementInfo } }) => {
+        logger.log('Element selected:', message.payload.elementInfo);
         setSelectedElement(message.payload.elementInfo);
       }
     );
@@ -108,14 +116,33 @@ export const App = () => {
   useEffect(() => {
     const handleUrlChange = (tabId: number, changeInfo: chrome.tabs.TabChangeInfo) => {
       if (currentTabId === tabId && changeInfo.url && isSelectionMode) {
+        logger.log('URL changed, cleaning up');
         cleanup();
       }
     };
 
+    logger.log('Monitoring URL change');
     chrome.tabs.onUpdated.addListener(handleUrlChange);
 
     return () => {
       chrome.tabs.onUpdated.removeListener(handleUrlChange);
+    };
+  }, [currentTabId, isSelectionMode]);
+
+  // Monitor Contents Reload
+  useEffect(() => {
+    const handleContentsReload = (tabId: number, changeInfo: chrome.tabs.TabChangeInfo) => {
+      if (currentTabId === tabId && changeInfo.status === 'loading') {
+        logger.log('Contents reloaded, cleaning up');
+        cleanup();
+      }
+    };
+
+    logger.log('Monitoring contents reload');
+    chrome.tabs.onUpdated.addListener(handleContentsReload);
+
+    return () => {
+      chrome.tabs.onUpdated.removeListener(handleContentsReload);
     };
   }, [currentTabId, isSelectionMode]);
 

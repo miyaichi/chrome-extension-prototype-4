@@ -1,6 +1,7 @@
 import { ChevronUp } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { useConnectionManager } from '../lib/connectionManager';
+import { Logger } from '../lib/logger';
 import { DOM_SELECTION_EVENTS, ElementInfo, SelectElementPayload } from '../types/domSelection';
 import './DOMSelector.css';
 import { DOMTreeView } from './DOMTreeView';
@@ -8,6 +9,7 @@ import { DOMTreeView } from './DOMTreeView';
 export const DOMSelector: React.FC = () => {
   const [selectedElement, setSelectedElement] = useState<ElementInfo | null>(null);
   const { subscribe, sendMessage } = useConnectionManager();
+  const logger = new Logger('DOMSelector');
 
   const handleElementSelect = (elementInfo: ElementInfo) => {
     const path: number[] = elementInfo.path;
@@ -20,6 +22,7 @@ export const DOMSelector: React.FC = () => {
     if (!selectedElement) return;
     if (selectedElement.path.length === 0) return;
 
+    logger.log('Parent element selected');
     const parentPath = selectedElement.path.slice(0, -1);
     sendMessage<SelectElementPayload>(DOM_SELECTION_EVENTS.SELECT_ELEMENT, {
       path: parentPath,
@@ -34,12 +37,14 @@ export const DOMSelector: React.FC = () => {
     const unsubscribeSelection = subscribe(
       DOM_SELECTION_EVENTS.ELEMENT_SELECTED,
       (message: { payload: { elementInfo: ElementInfo } }) => {
+        logger.log('Element selected:', message.payload.elementInfo);
         const elementInfo = message.payload.elementInfo;
         setSelectedElement(elementInfo);
       }
     );
 
     const unsubscribeUnselection = subscribe(DOM_SELECTION_EVENTS.ELEMENT_UNSELECTED, () => {
+      logger.log('Element unselected');
       setSelectedElement(null);
     });
 

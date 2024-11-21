@@ -62,7 +62,9 @@ npm run build
 │   │   ├── ShareCapture.css
 │   │   ├── ShareCapture.tsx     # Share Screen Capture
 │   │   ├── StyleEditor.css
-│   │   └── StyleEditor.tsx      # Style editor
+│   │   ├── StyleEditor.tsx      # Style editor
+│   │   ├── Tooltips.css
+│   │   └── Tooltips.tsx         # Tooltips
 │   ├── contentScript.ts         # Content script
 │   ├── lib/
 │   │   ├── connectionManager.ts # Connection manager

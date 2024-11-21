@@ -1,6 +1,7 @@
 import { Check, Plus, Search, X } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { useConnectionManager } from '../lib/connectionManager';
+import { Logger } from '../lib/logger';
 import { DOM_SELECTION_EVENTS, ElementInfo } from '../types/domSelection';
 import './StyleEditor.css';
 
@@ -12,11 +13,13 @@ export const StyleEditor: React.FC = () => {
   const [newValue, setNewValue] = useState('');
   const [isAdding, setIsAdding] = useState(false);
   const { subscribe, sendMessage } = useConnectionManager();
+  const logger = new Logger('StyleEditor');
 
   useEffect(() => {
     const unsubscribeSelection = subscribe(
       DOM_SELECTION_EVENTS.ELEMENT_SELECTED,
       (message: { payload: { elementInfo: ElementInfo } }) => {
+        logger.log('Element selected:', message.payload.elementInfo);
         setSelectedElement(message.payload.elementInfo);
         setEditedStyles({});
         setIsAdding(false);
@@ -26,6 +29,7 @@ export const StyleEditor: React.FC = () => {
     );
 
     const unsubscribeUnselection = subscribe(DOM_SELECTION_EVENTS.ELEMENT_UNSELECTED, () => {
+      logger.log('Element unselected');
       setSelectedElement(null);
     });
 
@@ -41,6 +45,7 @@ export const StyleEditor: React.FC = () => {
       [property]: value,
     }));
 
+    logger.log('Style changed:', property, value);
     sendMessage(DOM_SELECTION_EVENTS.UPDATE_ELEMENT_STYLE, {
       path: selectedElement?.path,
       styles: {
@@ -52,6 +57,7 @@ export const StyleEditor: React.FC = () => {
   const handleAddStyle = () => {
     if (!newProperty.trim() || !newValue.trim()) return;
 
+    logger.log('Adding new style:', newProperty, newValue);
     handleStyleChange(newProperty.trim(), newValue.trim());
     setNewProperty('');
     setNewValue('');

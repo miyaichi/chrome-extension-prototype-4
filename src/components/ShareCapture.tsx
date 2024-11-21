@@ -1,6 +1,7 @@
 import { Send, X } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { useConnectionManager } from '../lib/connectionManager';
+import { Logger } from '../lib/logger';
 import { useSettings } from '../lib/settings';
 import { shareAsPDF } from '../lib/shareAsPDF';
 import { shareAsPPT } from '../lib/shareAsPPT';
@@ -28,6 +29,7 @@ export const ShareCapture: React.FC<ShareCaptureProps> = ({ onClose, initialSele
   });
   const [isLoading, setIsLoading] = useState(false);
   const { subscribe } = useConnectionManager();
+  const logger = new Logger('ShareCapture');
 
   useEffect(() => {
     const unsubscribeCapture = subscribe(UI_EVENTS.CAPTURE_TAB_RESULT, (message) => {
@@ -87,6 +89,7 @@ export const ShareCapture: React.FC<ShareCaptureProps> = ({ onClose, initialSele
       return;
     }
 
+    logger.log('Sharing capture...');
     setIsLoading(true);
     try {
       const shareFunction = settings.shareFormat === 'pdf' ? shareAsPDF : shareAsPPT;
@@ -94,19 +97,16 @@ export const ShareCapture: React.FC<ShareCaptureProps> = ({ onClose, initialSele
       const url = captureInfo.captureUrl || '';
       const startTag = captureInfo.selectedElement?.startTag || '';
 
+      logger.log('Sharing as', settings.shareFormat.toUpperCase());
       await shareFunction(imageData, comment, url, startTag);
 
-      setImageDataUrl(undefined);
-      setComment('');
-      setCaptureInfo({
-        selectedElement: null,
-        captureUrl: null,
-      });
+      handleClose();
     } catch (error) {
-      console.error(error);
+      logger.error('Failed to share:', error);
     } finally {
       setIsLoading(false);
     }
+    logger.log('Capture shared');
   };
 
   return (
