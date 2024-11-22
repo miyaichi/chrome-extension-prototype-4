@@ -4,16 +4,28 @@ import { useEffect, useState } from 'react';
 export type LogLevel = 'error' | 'warn' | 'info' | 'debug';
 export type ShareFormat = 'pdf' | 'ppt';
 
+/**
+ * Interface representing the application settings
+ */
 export interface Settings {
+  /** The log level for the application */
   logLevel: LogLevel;
+  /** The format for sharing (either 'pdf' or 'ppt') */
   shareFormat: ShareFormat;
 }
 
+/**
+ * The default settings for the application
+ */
 export const defaultSettings: Settings = {
   logLevel: 'info',
   shareFormat: 'ppt',
 };
 
+/**
+ * Loads the settings from Chrome storage
+ * @returns A promise that resolves to the loaded settings
+ */
 export const loadSettings = async (): Promise<Settings> => {
   if (!chrome.storage || !chrome.storage.sync) {
     console.warn('Chrome storage API not available, using default settings');
@@ -33,6 +45,10 @@ export const loadSettings = async (): Promise<Settings> => {
   }
 };
 
+/**
+ * Saves the settings to Chrome storage
+ * @param settings - The settings to save
+ */
 export const saveSettings = async (settings: Settings): Promise<void> => {
   if (!chrome.storage || !chrome.storage.sync) {
     console.warn('Chrome storage API not available, settings will not persist');
@@ -46,6 +62,10 @@ export const saveSettings = async (settings: Settings): Promise<void> => {
   }
 };
 
+/**
+ * Custom React hook to manage settings state
+ * @returns An object containing the settings, loading state, and error state
+ */
 export const useSettings = () => {
   const [settings, setSettings] = useState<Settings>(defaultSettings);
   const [loading, setLoading] = useState(true);
