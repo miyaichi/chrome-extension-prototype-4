@@ -1,5 +1,5 @@
 import { Check, Plus, Search, X } from 'lucide-react';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useConnectionManager } from '../lib/connectionManager';
 import { Logger } from '../lib/logger';
 import { DOM_SELECTION_EVENTS, ElementInfo, StyleModification } from '../types/domSelection';
@@ -8,6 +8,10 @@ import './StyleEditor.css';
 interface StyleEditorProps {
   onStylesChange?: (modifications: StyleModification[]) => void;
 }
+
+const isValidCSSProperty = (property: string): boolean => {
+  return property in document.body.style;
+};
 
 export const StyleEditor: React.FC<StyleEditorProps> = ({ onStylesChange }) => {
   // State declarations
@@ -21,9 +25,79 @@ export const StyleEditor: React.FC<StyleEditorProps> = ({ onStylesChange }) => {
   // Utility instances
   const { subscribe, sendMessage } = useConnectionManager();
   const logger = new Logger('StyleEditor');
-  const previousStylesRef = useRef<Partial<Record<keyof CSSStyleDeclaration, string>>>({});
 
-  // Element selection handling
+  // Memoized functions that depend on props or state
+  const updateElementStyle = useCallback(
+    (property: keyof CSSStyleDeclaration, value: string) => {
+      sendMessage(DOM_SELECTION_EVENTS.UPDATE_ELEMENT_STYLE, {
+        path: selectedElement?.path,
+        styles: {
+          [property]: value,
+        },
+      });
+      logger.log('Style updated:', property, value);
+    },
+    [selectedElement?.path, sendMessage]
+  );
+
+  const notifyStyleChanges = useCallback(
+    (newStyles: Record<string, string>) => {
+      const modifications = Object.entries(newStyles).map(([prop, val]) => ({
+        property: prop,
+        value: val,
+      }));
+      logger.log('Styles changed:', modifications);
+      onStylesChange?.(modifications);
+    },
+    [onStylesChange]
+  );
+
+  // Non-memoized functions (simple state updates or no external dependencies)
+  const resetStyleEditorState = () => {
+    setEditedStyles({});
+    setIsAdding(false);
+    setNewProperty('');
+    setNewValue('');
+  };
+
+  const handleStyleChange = (property: keyof CSSStyleDeclaration, value: string) => {
+    setEditedStyles((prevStyles) => {
+      const currentValue = selectedElement?.computedStyle?.[property] as string;
+      const previousEditedValue = prevStyles[property];
+
+      if (value !== currentValue && value !== previousEditedValue) {
+        const newStyles = {
+          ...prevStyles,
+          [property]: value,
+        };
+
+        setTimeout(() => notifyStyleChanges(newStyles), 0);
+        updateElementStyle(property, value);
+        return newStyles;
+      }
+
+      return prevStyles;
+    });
+  };
+
+  const handleAddStyle = () => {
+    const trimmedProperty = newProperty.trim();
+    const trimmedValue = newValue.trim();
+
+    if (!trimmedProperty || !trimmedValue) return;
+
+    if (isValidCSSProperty(trimmedProperty)) {
+      logger.log('Adding new style:', trimmedProperty, trimmedValue);
+      handleStyleChange(trimmedProperty as keyof CSSStyleDeclaration, trimmedValue);
+      setNewProperty('');
+      setNewValue('');
+      setIsAdding(false);
+    } else {
+      logger.warn('Invalid CSS property:', trimmedProperty);
+    }
+  };
+
+  // Effect for element selection
   useEffect(() => {
     const handleElementSelected = (message: { payload: { elementInfo: ElementInfo } }) => {
       logger.log('Element selected:', message.payload.elementInfo);
@@ -51,74 +125,8 @@ export const StyleEditor: React.FC<StyleEditorProps> = ({ onStylesChange }) => {
     };
   }, []);
 
-  // Helper functions
-  const resetStyleEditorState = () => {
-    setEditedStyles({});
-    previousStylesRef.current = {};
-    setIsAdding(false);
-    setNewProperty('');
-    setNewValue('');
-  };
-
-  const isValidCSSProperty = (property: string): boolean => {
-    return property in document.body.style;
-  };
-
-  const notifyStyleChanges = (newStyles: Record<string, string>) => {
-    const modifications = Object.entries(newStyles).map(([prop, val]) => ({
-      property: prop,
-      value: val,
-    }));
-    logger.log('Styles changed:', modifications);
-    onStylesChange?.(modifications);
-  };
-
-  // Style handling functions
-  const handleStyleChange = (property: keyof CSSStyleDeclaration, value: string) => {
-    const newStyles = {
-      ...editedStyles,
-      [property]: value,
-    };
-
-    setEditedStyles(newStyles);
-
-    if (newStyles[property] !== previousStylesRef.current[property]) {
-      previousStylesRef.current = newStyles;
-      setTimeout(() => notifyStyleChanges(newStyles), 0);
-    }
-
-    updateElementStyle(property, value);
-  };
-
-  const updateElementStyle = (property: keyof CSSStyleDeclaration, value: string) => {
-    sendMessage(DOM_SELECTION_EVENTS.UPDATE_ELEMENT_STYLE, {
-      path: selectedElement?.path,
-      styles: {
-        [property]: value,
-      },
-    });
-    logger.log('Style updated:', property, value);
-  };
-
-  const handleAddStyle = () => {
-    const trimmedProperty = newProperty.trim();
-    const trimmedValue = newValue.trim();
-
-    if (!trimmedProperty || !trimmedValue) return;
-
-    if (isValidCSSProperty(trimmedProperty)) {
-      logger.log('Adding new style:', trimmedProperty, trimmedValue);
-      handleStyleChange(trimmedProperty as keyof CSSStyleDeclaration, trimmedValue);
-      setNewProperty('');
-      setNewValue('');
-      setIsAdding(false);
-    } else {
-      logger.warn('Invalid CSS property:', trimmedProperty);
-    }
-  };
-
-  // Style filtering and sorting
-  const getFilteredStyleEntries = () => {
+  // Memoized computed values
+  const styleEntries = useMemo(() => {
     if (!selectedElement?.computedStyle) return [];
 
     return Object.entries(selectedElement.computedStyle)
@@ -130,7 +138,7 @@ export const StyleEditor: React.FC<StyleEditorProps> = ({ onStylesChange }) => {
       )
       .filter(([key]) => key.toLowerCase().includes(searchTerm.toLowerCase()))
       .sort(([a], [b]) => a.localeCompare(b));
-  };
+  }, [selectedElement?.computedStyle, searchTerm]);
 
   // Render empty state
   if (!selectedElement?.computedStyle) {
@@ -147,8 +155,6 @@ export const StyleEditor: React.FC<StyleEditorProps> = ({ onStylesChange }) => {
   }
 
   // Main render
-  const styleEntries = getFilteredStyleEntries();
-
   return (
     <div className="card">
       <div className="card-header">
