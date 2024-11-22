@@ -162,7 +162,7 @@ export const shareAsPDF = async (
     // Add text to the page
     drawText(
       secondPage,
-      'Date and time:',
+      'Date and time: ',
       TEXT_CONFIG.margin,
       yOffset,
       TEXT_CONFIG.titleFontSize,
@@ -179,7 +179,7 @@ export const shareAsPDF = async (
     );
     yOffset -= TEXT_CONFIG.lineHeight * 2;
 
-    drawText(secondPage, 'URL:', TEXT_CONFIG.margin, yOffset, TEXT_CONFIG.titleFontSize, fonts);
+    drawText(secondPage, 'URL: ', TEXT_CONFIG.margin, yOffset, TEXT_CONFIG.titleFontSize, fonts);
     yOffset -= TEXT_CONFIG.lineHeight;
     const urlLines = wrapText(url, fonts.japanese, TEXT_CONFIG.maxWidth, TEXT_CONFIG.fontSize);
     for (const line of urlLines) {
@@ -190,7 +190,7 @@ export const shareAsPDF = async (
 
     drawText(
       secondPage,
-      'Element start tag:',
+      'Element start tag: ',
       TEXT_CONFIG.margin,
       yOffset,
       TEXT_CONFIG.titleFontSize,
@@ -209,7 +209,7 @@ export const shareAsPDF = async (
     }
     yOffset -= TEXT_CONFIG.lineHeight;
 
-    drawText(secondPage, 'Comment:', TEXT_CONFIG.margin, yOffset, TEXT_CONFIG.titleFontSize, fonts);
+    drawText(secondPage, 'Comment: ', TEXT_CONFIG.margin, yOffset, TEXT_CONFIG.titleFontSize, fonts);
     yOffset -= TEXT_CONFIG.lineHeight;
     const commentLines = wrapText(
       comment,

@@ -112,19 +112,19 @@ export const shareAsPPT = async (
     // Add text to the slide
     slide2.addText(
       [
-        { text: 'Date and time:', options: SLIDE_STYLES.titleStyle },
+        { text: 'Date and time: ', options: SLIDE_STYLES.titleStyle },
         { text: timestamp, options: SLIDE_STYLES.contentStyle },
         SLIDE_STYLES.spaceStyle,
 
-        { text: 'URL:', options: SLIDE_STYLES.titleStyle },
+        { text: 'URL: ', options: SLIDE_STYLES.titleStyle },
         { text: url, options: SLIDE_STYLES.contentStyle },
         SLIDE_STYLES.spaceStyle,
 
-        { text: 'Element start tag:', options: SLIDE_STYLES.titleStyle },
+        { text: 'Element start tag: ', options: SLIDE_STYLES.titleStyle },
         { text: startTag, options: SLIDE_STYLES.contentStyle },
         SLIDE_STYLES.spaceStyle,
 
-        { text: 'Comment:', options: SLIDE_STYLES.titleStyle },
+        { text: 'Comment: ', options: SLIDE_STYLES.titleStyle },
         { text: comment, options: SLIDE_STYLES.contentStyle },
       ],
       {
