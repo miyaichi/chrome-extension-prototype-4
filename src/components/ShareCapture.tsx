@@ -19,123 +19,134 @@ interface CaptureInfo {
   captureUrl: string | null;
 }
 
+interface CaptureResultPayload {
+  success: boolean;
+  imageDataUrl?: string;
+  error?: string;
+  url?: string;
+}
+
+interface ElementSelectionMessage {
+  payload: {
+    elementInfo: ElementInfo;
+  };
+}
+
+// Utility functions
+const getShareFunction = (format: string) => {
+  return format === 'pdf' ? shareAsPDF : shareAsPPT;
+};
+
+const initialCaptureInfo: CaptureInfo = {
+  selectedElement: null,
+  captureUrl: null,
+};
+
 export const ShareCapture: React.FC<ShareCaptureProps> = ({ onClose, initialSelectedElement }) => {
+  // State declarations
   const { settings } = useSettings();
-  const [comment, setComment] = useState('');
-  const [imageDataUrl, setImageDataUrl] = useState<string>();
-  const [captureInfo, setCaptureInfo] = useState<CaptureInfo>({
-    selectedElement: initialSelectedElement,
-    captureUrl: null,
-  });
-  const [isLoading, setIsLoading] = useState(false);
   const { subscribe } = useConnectionManager();
   const logger = new Logger('ShareCapture');
 
-  useEffect(() => {
-    const unsubscribeCapture = subscribe(UI_EVENTS.CAPTURE_TAB_RESULT, (message) => {
-      const payload = message.payload as {
-        success: boolean;
-        imageDataUrl?: string;
-        error?: string;
-        url?: string;
-      };
-      if (payload.success) {
-        setImageDataUrl(payload.imageDataUrl);
-        setCaptureInfo((prev) => ({
-          ...prev,
-          captureUrl: payload.url || null,
-        }));
-      } else {
-        logger.error('Capture failed:', payload.error);
-      }
-    });
+  const [comment, setComment] = useState('');
+  const [imageDataUrl, setImageDataUrl] = useState<string>();
+  const [captureInfo, setCaptureInfo] = useState<CaptureInfo>({
+    ...initialCaptureInfo,
+    selectedElement: initialSelectedElement,
+  });
+  const [isLoading, setIsLoading] = useState(false);
 
-    const unsubscribeSelection = subscribe(
-      DOM_SELECTION_EVENTS.ELEMENT_SELECTED,
-      (message: { payload: { elementInfo: ElementInfo } }) => {
-        setCaptureInfo((prev) => ({
-          ...prev,
-          selectedElement: message.payload.elementInfo,
-        }));
-      }
-    );
-
-    const unsubscribeUnselection = subscribe(DOM_SELECTION_EVENTS.ELEMENT_UNSELECTED, () => {
-      setCaptureInfo((prev) => ({
-        ...prev,
-        selectedElement: null,
-      }));
-    });
-
-    return () => {
-      unsubscribeCapture();
-      unsubscribeSelection();
-      unsubscribeUnselection();
-    };
-  }, [subscribe]);
-
-  const handleClose = () => {
+  // Event handlers
+  const handleClose = (): void => {
     setImageDataUrl(undefined);
     setComment('');
-    setCaptureInfo({
-      selectedElement: null,
-      captureUrl: null,
-    });
+    setCaptureInfo(initialCaptureInfo);
     onClose();
   };
 
-  const handleShare = async () => {
-    if (!imageDataUrl) {
-      return;
-    }
+  const handleShare = async (): Promise<void> => {
+    if (!imageDataUrl) return;
 
     logger.log('Sharing capture...');
     setIsLoading(true);
+
     try {
-      const shareFunction = settings.shareFormat === 'pdf' ? shareAsPDF : shareAsPPT;
-      const imageData = imageDataUrl || '';
-      const url = captureInfo.captureUrl || '';
-      const startTag = captureInfo.selectedElement?.startTag || '';
+      const shareFunction = getShareFunction(settings.shareFormat);
+      await shareFunction(
+        imageDataUrl,
+        comment,
+        captureInfo.captureUrl || '',
+        captureInfo.selectedElement?.startTag || ''
+      );
 
-      logger.log('Sharing as', settings.shareFormat.toUpperCase());
-      await shareFunction(imageData, comment, url, startTag);
-
+      logger.log('Capture shared');
       handleClose();
     } catch (error) {
       logger.error('Failed to share:', error);
     } finally {
       setIsLoading(false);
     }
-    logger.log('Capture shared');
   };
 
-  return (
-    <div className="capture-modal">
-      <div className="capture-container">
-        <div className="capture-header">
-          <h2 className="capture-title">Share Capture</h2>
-          <button onClick={handleClose} className="capture-close">
-            <X size={20} />
-          </button>
+  const handleCommentChange = (e: React.ChangeEvent<HTMLTextAreaElement>): void => {
+    setComment(e.target.value);
+  };
+
+  // Message subscriptions
+  useEffect(() => {
+    const subscriptions = [
+      subscribe(UI_EVENTS.CAPTURE_TAB_RESULT, (message: { payload: CaptureResultPayload }) => {
+        const { success, imageDataUrl, error, url } = message.payload;
+
+        if (success) {
+          setImageDataUrl(imageDataUrl);
+          setCaptureInfo((prev) => ({ ...prev, captureUrl: url || null }));
+        } else {
+          logger.error('Capture failed:', error);
+        }
+      }),
+
+      subscribe(DOM_SELECTION_EVENTS.ELEMENT_SELECTED, (message: ElementSelectionMessage) => {
+        setCaptureInfo((prev) => ({
+          ...prev,
+          selectedElement: message.payload.elementInfo,
+        }));
+      }),
+
+      subscribe(DOM_SELECTION_EVENTS.ELEMENT_UNSELECTED, () => {
+        setCaptureInfo((prev) => ({
+          ...prev,
+          selectedElement: null,
+        }));
+      }),
+    ];
+
+    return () => {
+      subscriptions.forEach((unsubscribe) => unsubscribe());
+    };
+  }, []);
+
+  // UI rendering - preview section
+  const renderPreview = () => {
+    if (imageDataUrl) {
+      return (
+        <div className="capture-preview">
+          <img src={imageDataUrl} alt="Screen Capture" className="capture-image" />
         </div>
+      );
+    }
 
-        {imageDataUrl ? (
-          <div className="capture-preview">
-            <img src={imageDataUrl} alt="Screen Capture" className="capture-image" />
-          </div>
-        ) : (
-          <div className="capture-preview">
-            <p>Capturing screen...</p>
-          </div>
-        )}
+    return (
+      <div className="capture-preview">
+        <p>Capturing screen...</p>
+      </div>
+    );
+  };
 
-        <textarea
-          value={comment}
-          onChange={(e) => setComment(e.target.value)}
-          placeholder="Add a comment..."
-          className="capture-comment"
-        />
-
+  // UI rendering - element info section
+  const renderElementInfo = () => {
+    return (
+      <>
         {captureInfo.captureUrl && (
           <div className="element-info">
             <p>{captureInfo.captureUrl}</p>
@@ -153,6 +164,30 @@ export const ShareCapture: React.FC<ShareCaptureProps> = ({ onClose, initialSele
             </p>
           </div>
         )}
+      </>
+    );
+  };
+
+  return (
+    <div className="capture-modal">
+      <div className="capture-container">
+        <div className="capture-header">
+          <h2 className="capture-title">Share Capture</h2>
+          <button onClick={handleClose} className="capture-close">
+            <X size={20} />
+          </button>
+        </div>
+
+        {renderPreview()}
+
+        <textarea
+          value={comment}
+          onChange={handleCommentChange}
+          placeholder="Add a comment..."
+          className="capture-comment"
+        />
+
+        {renderElementInfo()}
 
         <div className="capture-actions">
           <button onClick={handleShare} className="share-button" disabled={!imageDataUrl}>

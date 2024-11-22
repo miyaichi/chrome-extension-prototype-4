@@ -49,13 +49,11 @@ export const DOMSelector: React.FC<DOMSelectorProps> = () => {
   // Message subscriptions
   useEffect(() => {
     const subscriptions = [
-      subscribe(
-        DOM_SELECTION_EVENTS.ELEMENT_SELECTED,
-        (message: ElementSelectionMessage) => {
-          logger.log('Element selected:', message.payload.elementInfo);
-          setSelectedElement(message.payload.elementInfo);
-        }
-      ),
+      subscribe(DOM_SELECTION_EVENTS.ELEMENT_SELECTED, (message: ElementSelectionMessage) => {
+        logger.log('Element selected:', message.payload.elementInfo);
+        setSelectedElement(message.payload.elementInfo);
+      }),
+
       subscribe(DOM_SELECTION_EVENTS.ELEMENT_UNSELECTED, () => {
         logger.log('Element unselected');
         setSelectedElement(null);
@@ -64,7 +62,7 @@ export const DOMSelector: React.FC<DOMSelectorProps> = () => {
 
     // Clean up subscriptions
     return () => {
-      subscriptions.forEach(unsubscribe => unsubscribe());
+      subscriptions.forEach((unsubscribe) => unsubscribe());
     };
   }, []);
 
@@ -104,10 +102,7 @@ export const DOMSelector: React.FC<DOMSelectorProps> = () => {
           </div>
           <div className="element-path">{selectedElement.path.join(' > ')}</div>
         </div>
-        <DOMTreeView 
-          elementInfo={selectedElement}
-          onSelect={handleElementSelect}
-        />
+        <DOMTreeView elementInfo={selectedElement} onSelect={handleElementSelect} />
       </div>
     </div>
   );

@@ -112,12 +112,13 @@ export const StyleEditor: React.FC<StyleEditorProps> = ({ onStylesChange }) => {
         setSelectedElement(message.payload.elementInfo);
         resetStyleEditorState();
       }),
+
       subscribe(DOM_SELECTION_EVENTS.ELEMENT_UNSELECTED, () => {
         logger.log('Element unselected');
         setSelectedElement(null);
       }),
     ];
- 
+
     // Clean up subscriptions
     return () => {
       subscriptions.forEach((unsubscribe) => unsubscribe());
