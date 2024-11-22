@@ -150,12 +150,27 @@ const createInfoPage = (
   pdfDoc: PDFDocument,
   sections: { title: string; content: string }[],
   fonts: FontConfig
-): PDFPage => {
-  const page = pdfDoc.addPage([PAGE_CONFIG.WIDTH, PAGE_CONFIG.HEIGHT]);
-  let yOffset = 800;
+): PDFPage[] => {
+  const pages: PDFPage[] = [];
+  let currentPage = pdfDoc.addPage([PAGE_CONFIG.WIDTH, PAGE_CONFIG.HEIGHT]);
+  pages.push(currentPage);
+  let yOffset = PAGE_CONFIG.HEIGHT - TEXT_CONFIG.margin;
 
   sections.forEach((section) => {
-    drawText(page, section.title, TEXT_CONFIG.margin, yOffset, TEXT_CONFIG.titleFontSize, fonts);
+    if (yOffset - TEXT_CONFIG.lineHeight < TEXT_CONFIG.margin) {
+      currentPage = pdfDoc.addPage([PAGE_CONFIG.WIDTH, PAGE_CONFIG.HEIGHT]);
+      pages.push(currentPage);
+      yOffset = PAGE_CONFIG.HEIGHT - TEXT_CONFIG.margin;
+    }
+
+    drawText(
+      currentPage,
+      section.title,
+      TEXT_CONFIG.margin,
+      yOffset,
+      TEXT_CONFIG.titleFontSize,
+      fonts
+    );
     yOffset -= TEXT_CONFIG.lineHeight;
 
     const contentLines = wrapText(
@@ -165,14 +180,27 @@ const createInfoPage = (
       TEXT_CONFIG.fontSize
     );
 
-    contentLines.forEach((line) => {
-      drawText(page, line, TEXT_CONFIG.margin, yOffset, TEXT_CONFIG.fontSize, fonts);
+    for (let i = 0; i < contentLines.length; i++) {
+      if (yOffset - TEXT_CONFIG.lineHeight < TEXT_CONFIG.margin) {
+        currentPage = pdfDoc.addPage([PAGE_CONFIG.WIDTH, PAGE_CONFIG.HEIGHT]);
+        pages.push(currentPage);
+        yOffset = PAGE_CONFIG.HEIGHT - TEXT_CONFIG.margin;
+      }
+
+      drawText(
+        currentPage,
+        contentLines[i],
+        TEXT_CONFIG.margin,
+        yOffset,
+        TEXT_CONFIG.fontSize,
+        fonts
+      );
       yOffset -= TEXT_CONFIG.lineHeight;
-    });
+    }
     yOffset -= TEXT_CONFIG.lineHeight;
   });
 
-  return page;
+  return pages;
 };
 
 export const shareAsPDF = async (
