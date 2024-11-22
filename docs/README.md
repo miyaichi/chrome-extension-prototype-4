@@ -1,13 +1,9 @@
+**DOM Workbench v1.0.0** • [**Docs**](modules.md)
+
+***
+
 # chrome-extension-prototype-4
 DOM Workbench is a Chrome extension that makes it easy to perform DOM operations on web pages. It provides functions such as screen capturing of selected DOM elements, adding comments, edit computed styles, and sharing screen captures with comments in PDF or PPT format.
-
-## Documentation
-Detailed API documentation is available in the [docs](./docs/README.md) directory. This documentation is automatically generated using TypeDoc and includes:
-- API Reference
-- Component Documentation
-- Utility Functions
-- Type Definitions
-
 
 ## Main features
 - Select DOM elements and display information
@@ -109,5 +105,5 @@ npm run build
 ```
 
 ## License
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](_media/LICENSE) file for details.
 ```
