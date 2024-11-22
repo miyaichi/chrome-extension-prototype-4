@@ -146,58 +146,81 @@ const createImagePage = (
   return page;
 };
 
+const layoutSection = (
+  pdfDoc: PDFDocument,
+  pages: PDFPage[],
+  currentPage: PDFPage,
+  section: { title: string; content: string },
+  yOffset: number,
+  fonts: FontConfig
+): { page: PDFPage; yOffset: number } => {
+  let page = currentPage;
+
+  if (shouldCreateNewPage(yOffset)) {
+    ({ page, yOffset } = createNewInfoPage(pdfDoc));
+    pages.push(page);
+  }
+
+  drawText(
+    page,
+    section.title,
+    TEXT_CONFIG.margin,
+    yOffset,
+    TEXT_CONFIG.titleFontSize,
+    fonts
+  );
+  yOffset -= TEXT_CONFIG.lineHeight;
+
+  const contentLines = wrapText(
+    section.content,
+    fonts.japanese,
+    TEXT_CONFIG.maxWidth,
+    TEXT_CONFIG.fontSize
+  );
+
+  for (const line of contentLines) {
+    if (shouldCreateNewPage(yOffset)) {
+      ({ page, yOffset } = createNewInfoPage(pdfDoc));
+      pages.push(page);
+    }
+
+    drawText(
+      page,
+      line,
+      TEXT_CONFIG.margin,
+      yOffset,
+      TEXT_CONFIG.fontSize,
+      fonts
+    );
+    yOffset -= TEXT_CONFIG.lineHeight;
+  }
+
+  return { page, yOffset: yOffset - TEXT_CONFIG.lineHeight };
+};
+
+const shouldCreateNewPage = (yOffset: number): boolean => 
+  yOffset - TEXT_CONFIG.lineHeight < TEXT_CONFIG.margin;
+
+const createNewInfoPage = (pdfDoc: PDFDocument): {
+  page: PDFPage;
+  yOffset: number;
+} => {
+  const page = pdfDoc.addPage([PAGE_CONFIG.WIDTH, PAGE_CONFIG.HEIGHT]);
+  const yOffset = PAGE_CONFIG.HEIGHT - TEXT_CONFIG.margin;
+  return { page, yOffset };
+};
+
 const createInfoPage = (
   pdfDoc: PDFDocument,
   sections: { title: string; content: string }[],
   fonts: FontConfig
 ): PDFPage[] => {
   const pages: PDFPage[] = [];
-  let currentPage = pdfDoc.addPage([PAGE_CONFIG.WIDTH, PAGE_CONFIG.HEIGHT]);
-  pages.push(currentPage);
-  let yOffset = PAGE_CONFIG.HEIGHT - TEXT_CONFIG.margin;
+  let { page, yOffset } = createNewInfoPage(pdfDoc);
+  pages.push(page);
 
-  sections.forEach((section) => {
-    if (yOffset - TEXT_CONFIG.lineHeight < TEXT_CONFIG.margin) {
-      currentPage = pdfDoc.addPage([PAGE_CONFIG.WIDTH, PAGE_CONFIG.HEIGHT]);
-      pages.push(currentPage);
-      yOffset = PAGE_CONFIG.HEIGHT - TEXT_CONFIG.margin;
-    }
-
-    drawText(
-      currentPage,
-      section.title,
-      TEXT_CONFIG.margin,
-      yOffset,
-      TEXT_CONFIG.titleFontSize,
-      fonts
-    );
-    yOffset -= TEXT_CONFIG.lineHeight;
-
-    const contentLines = wrapText(
-      section.content,
-      fonts.japanese,
-      TEXT_CONFIG.maxWidth,
-      TEXT_CONFIG.fontSize
-    );
-
-    for (let i = 0; i < contentLines.length; i++) {
-      if (yOffset - TEXT_CONFIG.lineHeight < TEXT_CONFIG.margin) {
-        currentPage = pdfDoc.addPage([PAGE_CONFIG.WIDTH, PAGE_CONFIG.HEIGHT]);
-        pages.push(currentPage);
-        yOffset = PAGE_CONFIG.HEIGHT - TEXT_CONFIG.margin;
-      }
-
-      drawText(
-        currentPage,
-        contentLines[i],
-        TEXT_CONFIG.margin,
-        yOffset,
-        TEXT_CONFIG.fontSize,
-        fonts
-      );
-      yOffset -= TEXT_CONFIG.lineHeight;
-    }
-    yOffset -= TEXT_CONFIG.lineHeight;
+  sections.forEach(section => {
+    ({ page, yOffset } = layoutSection(pdfDoc, pages, page, section, yOffset, fonts));
   });
 
   return pages;
