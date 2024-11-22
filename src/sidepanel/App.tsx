@@ -145,12 +145,12 @@ export const App = () => {
           </button>
 
           <div className="header-actions">
-            <Tooltip content="Capture a screenshot of the current tab">
+            <Tooltip content={chrome.i18n.getMessage('tooltipCapture')}>
               <button onClick={handleCapture} className="icon-button">
                 <Camera size={16} />
               </button>
             </Tooltip>
-            <Tooltip content="Settings">
+            <Tooltip content={chrome.i18n.getMessage('tooltipSettings')}>
               <button
                 onClick={() => setShowSettings(!showSettings)}
                 className={`icon-button ${showSettings ? 'active' : ''}`}

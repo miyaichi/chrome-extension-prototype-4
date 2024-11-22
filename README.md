@@ -44,6 +44,11 @@ npm run build
 ## Directory Structure
 
 ```
+├── _locales/                    # Localization
+│   ├── en/
+│   │   └── messages.json
+│   └── ja/
+│       └── messages.json
 ├── asset/
 |   ├── fonts/                   # Fonts
 ├── dist/                        # Compiled files (git ignored)

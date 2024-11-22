@@ -47,6 +47,7 @@ module.exports = {
       patterns: [
         { from: 'public', to: '.' },
         { from: 'manifest.json', to: '.' },
+        { from: '_locales', to: '_locales' },
       ],
     }),
   ],

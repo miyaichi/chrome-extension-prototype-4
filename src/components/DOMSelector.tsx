@@ -74,10 +74,7 @@ export const DOMSelector: React.FC<DOMSelectorProps> = () => {
         <div className="card-header">
           <h2 className="card-title">DOM Selector</h2>
         </div>
-        <div className="style-editor-empty">
-          No element is selected. Turn on Selection Mode and click on a component to display
-          information about it and edit its style.
-        </div>
+        <div className="style-editor-empty">{chrome.i18n.getMessage('domSelectorEmptyState')}</div>
       </div>
     );
   }
@@ -92,18 +89,16 @@ export const DOMSelector: React.FC<DOMSelectorProps> = () => {
           <div className="element-header">
             <h3>Selected Element:</h3>
             {hasParentElement(selectedElement) && (
-              <Tooltip content="Go to parent element">
-                <button
-                  onClick={handleParentSelect}
-                  className="parent-nav-button"
-                  title="Go to parent element"
-                >
+              <Tooltip content={chrome.i18n.getMessage('tooltipParentElement')}>
+                <button onClick={handleParentSelect} className="parent-nav-button">
                   <ChevronUp size={16} />
                 </button>
               </Tooltip>
             )}
           </div>
-          <div className="element-path">{selectedElement.path.join(' > ')}</div>
+          <Tooltip content={chrome.i18n.getMessage('labelDOMPath')}>
+            <div className="element-path">{selectedElement.path.join(' > ')}</div>
+          </Tooltip>
         </div>
         <DOMTreeView elementInfo={selectedElement} onSelect={handleElementSelect} />
       </div>

@@ -148,7 +148,9 @@ export const StyleEditor: React.FC<StyleEditorProps> = ({ onStylesChange }) => {
           <h2 className="card-title">Style Editor</h2>
         </div>
         <div className="style-editor-empty">
-          You can check and modify the computed style of the selected element.
+          <div className="style-editor-empty">
+            {chrome.i18n.getMessage('styleEditorEmptyState')}
+          </div>
         </div>
       </div>
     );
