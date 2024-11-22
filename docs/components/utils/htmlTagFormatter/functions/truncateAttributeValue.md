@@ -28,4 +28,4 @@ The truncated attribute value, with "..." appended if it was truncated
 
 ## Defined in
 
-src/components/utils/htmlTagFormatter.tsx:66
+src/components/utils/htmlTagFormatter.tsx:76

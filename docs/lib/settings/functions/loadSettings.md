@@ -18,4 +18,4 @@ A promise that resolves to the loaded settings
 
 ## Defined in
 
-src/lib/settings.ts:29
+src/lib/settings.ts:32

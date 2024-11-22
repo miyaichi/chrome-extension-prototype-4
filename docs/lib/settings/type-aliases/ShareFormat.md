@@ -8,6 +8,8 @@
 
 > **ShareFormat**: `"pdf"` \| `"ppt"`
 
+Represents the available formats for sharing content
+
 ## Defined in
 
-src/lib/settings.ts:5
+src/lib/settings.ts:8

@@ -22,4 +22,4 @@ The settings to save
 
 ## Defined in
 
-src/lib/settings.ts:52
+src/lib/settings.ts:55

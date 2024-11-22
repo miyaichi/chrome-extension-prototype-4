@@ -18,7 +18,7 @@ The log level for the application
 
 #### Defined in
 
-src/lib/settings.ts:12
+src/lib/settings.ts:15
 
 ***
 
@@ -30,4 +30,4 @@ The format for sharing (either 'pdf' or 'ppt')
 
 #### Defined in
 
-src/lib/settings.ts:14
+src/lib/settings.ts:17

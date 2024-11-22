@@ -12,4 +12,4 @@ The default settings for the application
 
 ## Defined in
 
-src/lib/settings.ts:20
+src/lib/settings.ts:23

@@ -45,6 +45,11 @@ export interface Message<T = any> {
   timestamp: number;
 }
 
+/**
+ * A singleton class that manages connections and message passing between different contexts
+ * in a Chrome extension (background, content scripts, and side panel).
+ * Handles connection management, reconnection logic, and message broadcasting.
+ */
 export class ConnectionManager {
   private static instance: ConnectionManager;
   private static readonly RECONNECT_DELAY = 1000;
@@ -106,6 +111,10 @@ export class ConnectionManager {
     return ConnectionManager.instance;
   }
 
+  /**
+   * Sets the context for the ConnectionManager instance and reinitializes connections
+   * @param context - The new context to set ('content', 'background', or 'sidepanel')
+   */
   public setContext(context: Context) {
     if (this.context === context) {
       this.logger.debug('Context already set, skipping...');
@@ -279,6 +288,13 @@ export class ConnectionManager {
     }
   }
 
+  /**
+   * Subscribes to messages of a specific type with a handler function
+   * @template T - The type of the message payload
+   * @param messageType - The type of message to subscribe to
+   * @param handler - The handler function to be called when a message is received
+   * @returns A function to unsubscribe the handler
+   */
   public subscribe<T>(
     messageType: MessageType,
     handler: (message: Message<T>) => void
@@ -337,7 +353,8 @@ export class ConnectionManager {
 }
 
 /**
- * The default settings for the application
+ * A hook that provides access to ConnectionManager instance methods
+ * @returns An object containing message sending and subscription methods
  */
 export const useConnectionManager = () => {
   const manager = ConnectionManager.getInstance();

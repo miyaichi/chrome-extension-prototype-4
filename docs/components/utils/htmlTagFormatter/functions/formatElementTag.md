@@ -28,4 +28,4 @@ A React node representing the formatted HTML start tag
 
 ## Defined in
 
-src/components/utils/htmlTagFormatter.tsx:80
+src/components/utils/htmlTagFormatter.tsx:90

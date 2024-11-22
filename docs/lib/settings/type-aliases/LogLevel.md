@@ -8,6 +8,8 @@
 
 > **LogLevel**: `"error"` \| `"warn"` \| `"info"` \| `"debug"`
 
+Represents the available log levels for the application
+
 ## Defined in
 
-src/lib/settings.ts:4
+src/lib/settings.ts:5

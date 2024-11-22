@@ -14,23 +14,31 @@ Custom React hook to manage settings state
 
 `object`
 
-An object containing the settings, loading state, and error state
+An object containing the settings state and management functions
 
 ### error
 
 > **error**: `null` \| `string`
 
+Error message if settings operations failed
+
 ### loading
 
 > **loading**: `boolean`
+
+Indicates if settings are currently being loaded
 
 ### settings
 
 > **settings**: [`Settings`](../interfaces/Settings.md)
 
+Current application settings
+
 ### updateSettings()
 
 > **updateSettings**: (`newSettings`) => `Promise`\<`void`\>
+
+Function to update settings with partial changes
 
 #### Parameters
 
@@ -42,4 +50,4 @@ An object containing the settings, loading state, and error state
 
 ## Defined in
 
-src/lib/settings.ts:69
+src/lib/settings.ts:72

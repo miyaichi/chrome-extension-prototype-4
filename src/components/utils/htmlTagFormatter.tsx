@@ -39,13 +39,23 @@ const injectStyles = () => {
   document.head.appendChild(styleElement);
 };
 
+/**
+ * Configuration options for HTML tag formatting
+ */
 export interface HTMLTagFormatterOptions {
+  /** Whether to display the full content of attribute values without truncation */
   showFullContent?: boolean;
+  /** Maximum length for truncated attribute values */
   maxLength?: number;
+  /** Custom class names for syntax highlighting elements */
   classNames?: {
+    /** Class name for HTML tag names */
     tag?: string;
+    /** Class name for attribute names */
     attr?: string;
+    /** Class name for attribute values */
     value?: string;
+    /** Class name for punctuation characters */
     punctuation?: string;
   };
 }

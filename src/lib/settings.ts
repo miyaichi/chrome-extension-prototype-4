@@ -1,7 +1,10 @@
 // src/lib/settings.ts
 import { useEffect, useState } from 'react';
 
+/** Represents the available log levels for the application */
 export type LogLevel = 'error' | 'warn' | 'info' | 'debug';
+
+/** Represents the available formats for sharing content */
 export type ShareFormat = 'pdf' | 'ppt';
 
 /**
@@ -64,7 +67,7 @@ export const saveSettings = async (settings: Settings): Promise<void> => {
 
 /**
  * Custom React hook to manage settings state
- * @returns An object containing the settings, loading state, and error state
+ * @returns An object containing the settings state and management functions
  */
 export const useSettings = () => {
   const [settings, setSettings] = useState<Settings>(defaultSettings);
@@ -115,9 +118,13 @@ export const useSettings = () => {
   };
 
   return {
+    /** Current application settings */
     settings,
+    /** Function to update settings with partial changes */
     updateSettings,
+    /** Indicates if settings are currently being loaded */
     loading,
+    /** Error message if settings operations failed */
     error,
   };
 };

@@ -8,6 +8,10 @@ const LOG_LEVEL_PRIORITIES: Record<LogLevel, number> = {
   debug: 3,
 };
 
+/**
+ * A logger class that provides context-aware logging functionality with configurable log levels.
+ * Supports logging at error, warn, info, and debug levels with message context prefixing.
+ */
 export class Logger {
   private static logLevel: LogLevel = 'info';
 

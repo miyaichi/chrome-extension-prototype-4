@@ -6,6 +6,10 @@
 
 # Class: ConnectionManager
 
+A singleton class that manages connections and message passing between different contexts
+in a Chrome extension (background, content scripts, and side panel).
+Handles connection management, reconnection logic, and message broadcasting.
+
 ## Methods
 
 ### addMessageHandler()
@@ -30,7 +34,7 @@ The handler function for the message
 
 #### Defined in
 
-src/lib/connectionManager.ts:260
+src/lib/connectionManager.ts:269
 
 ***
 
@@ -56,7 +60,7 @@ The handler function to remove
 
 #### Defined in
 
-src/lib/connectionManager.ts:272
+src/lib/connectionManager.ts:281
 
 ***
 
@@ -84,7 +88,7 @@ Sends a message to the specified target context
 
 #### Defined in
 
-src/lib/connectionManager.ts:228
+src/lib/connectionManager.ts:237
 
 ***
 
@@ -92,9 +96,13 @@ src/lib/connectionManager.ts:228
 
 > **setContext**(`context`): `void`
 
+Sets the context for the ConnectionManager instance and reinitializes connections
+
 #### Parameters
 
 • **context**: [`Context`](../type-aliases/Context.md)
+
+The new context to set ('content', 'background', or 'sidepanel')
 
 #### Returns
 
@@ -102,7 +110,7 @@ src/lib/connectionManager.ts:228
 
 #### Defined in
 
-src/lib/connectionManager.ts:109
+src/lib/connectionManager.ts:118
 
 ***
 
@@ -110,19 +118,29 @@ src/lib/connectionManager.ts:109
 
 > **subscribe**\<`T`\>(`messageType`, `handler`): () => `void`
 
+Subscribes to messages of a specific type with a handler function
+
 #### Type Parameters
 
 • **T**
+
+The type of the message payload
 
 #### Parameters
 
 • **messageType**: [`MessageType`](../type-aliases/MessageType.md)
 
+The type of message to subscribe to
+
 • **handler**
+
+The handler function to be called when a message is received
 
 #### Returns
 
 `Function`
+
+A function to unsubscribe the handler
 
 ##### Returns
 
@@ -130,7 +148,7 @@ src/lib/connectionManager.ts:109
 
 #### Defined in
 
-src/lib/connectionManager.ts:282
+src/lib/connectionManager.ts:298
 
 ***
 
@@ -148,4 +166,4 @@ The singleton instance of the ConnectionManager
 
 #### Defined in
 
-src/lib/connectionManager.ts:102
+src/lib/connectionManager.ts:107

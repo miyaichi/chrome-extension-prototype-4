@@ -6,6 +6,9 @@
 
 # Class: Logger
 
+A logger class that provides context-aware logging functionality with configurable log levels.
+Supports logging at error, warn, info, and debug levels with message context prefixing.
+
 ## Constructors
 
 ### new Logger()
@@ -26,7 +29,7 @@ The context for the logger instance
 
 #### Defined in
 
-src/lib/logger.ts:18
+src/lib/logger.ts:22
 
 ## Methods
 
@@ -52,7 +55,7 @@ Additional arguments to log
 
 #### Defined in
 
-src/lib/logger.ts:42
+src/lib/logger.ts:46
 
 ***
 
@@ -78,7 +81,7 @@ Additional arguments to log
 
 #### Defined in
 
-src/lib/logger.ts:75
+src/lib/logger.ts:79
 
 ***
 
@@ -104,7 +107,7 @@ Additional arguments to log
 
 #### Defined in
 
-src/lib/logger.ts:53
+src/lib/logger.ts:57
 
 ***
 
@@ -130,7 +133,7 @@ Additional arguments to log
 
 #### Defined in
 
-src/lib/logger.ts:64
+src/lib/logger.ts:68
 
 ***
 
@@ -152,4 +155,4 @@ The log level to set
 
 #### Defined in
 
-src/lib/logger.ts:24
+src/lib/logger.ts:28
