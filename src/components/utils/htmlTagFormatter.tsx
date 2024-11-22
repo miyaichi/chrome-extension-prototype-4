@@ -57,11 +57,26 @@ const DEFAULT_CLASSES = {
   punctuation: 'syntax-punctuation',
 } as const;
 
-export const truncateAttributeValue = (value: string, maxLength: number = 25) => {
+/**
+ * Truncate an attribute value to a maximum length
+ * @param value - The attribute value to truncate
+ * @param maxLength - The maximum length of the truncated value (default is 25)
+ * @returns The truncated attribute value, with "..." appended if it was truncated
+ */
+export const truncateAttributeValue = (value: string, maxLength: number = 25): string => {
   if (value.length <= maxLength) return value;
   return `${value.substring(0, maxLength)}...`;
 };
 
+/**
+ * Format an HTML start tag into a React node with syntax highlighting
+ * @param startTag - The HTML start tag to format
+ * @param options - Optional settings for formatting
+ * @param options.showFullContent - Whether to show the full content of attribute values (default is false)
+ * @param options.maxLength - The maximum length of truncated attribute values (default is 25)
+ * @param options.classNames - Custom class names for syntax highlighting
+ * @returns A React node representing the formatted HTML start tag
+ */
 export const formatElementTag = (
   startTag: string,
   options: HTMLTagFormatterOptions = {}
