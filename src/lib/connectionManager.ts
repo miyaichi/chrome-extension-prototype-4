@@ -2,6 +2,9 @@ import { nanoid } from 'nanoid';
 import { Logger } from './logger';
 import { loadSettings } from './settings';
 
+/**
+ * Type representing the different message types that can be sent
+ */
 export type MessageType =
   | 'SIDE_PANEL_READY'
   | 'SIDE_PANEL_CLOSED'
@@ -18,14 +21,27 @@ export type MessageType =
   | 'CAPTURE_TAB_RESULT'
   | 'DEBUG'; // Special message type for debugging purposes - handlers will receive all messages for logging/monitoring
 
+/**
+ * Type representing the different contexts in which messages can be sent
+ */
 export type Context = 'content' | 'background' | 'sidepanel';
 
+/**
+ * Interface representing a message that can be sent between different contexts
+ * @template T - The type of the payload
+ */
 export interface Message<T = any> {
+  /** The unique identifier for the message */
   id: string;
+  /** The type of the message */
   type: MessageType;
+  /** The payload of the message */
   payload: T;
+  /** The source context of the message */
   source: Context;
+  /** The target context of the message (optional) */
   target?: Context;
+  /** The timestamp when the message was created */
   timestamp: number;
 }
 
@@ -320,6 +336,9 @@ export class ConnectionManager {
   }
 }
 
+/**
+ * The default settings for the application
+ */
 export const useConnectionManager = () => {
   const manager = ConnectionManager.getInstance();
   return {
