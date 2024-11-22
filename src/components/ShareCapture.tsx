@@ -67,7 +67,7 @@ export const ShareCapture: React.FC<ShareCaptureProps> = ({ onClose, initialSele
   const handleShare = async (): Promise<void> => {
     if (!imageDataUrl) return;
 
-    logger.log('Sharing capture...');
+    logger.debug('Sharing capture...');
     setIsLoading(true);
 
     try {
@@ -79,7 +79,7 @@ export const ShareCapture: React.FC<ShareCaptureProps> = ({ onClose, initialSele
         captureInfo.selectedElement?.startTag || ''
       );
 
-      logger.log('Capture shared');
+      logger.debug('Capture shared');
       handleClose();
     } catch (error) {
       logger.error('Failed to share:', error);
