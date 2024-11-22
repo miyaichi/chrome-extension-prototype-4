@@ -9,6 +9,13 @@ interface StyleEditorProps {
   onStylesChange?: (modifications: StyleModification[]) => void;
 }
 
+interface ElementSelectionMessage {
+  payload: {
+    elementInfo: ElementInfo;
+  };
+}
+
+// Utility functions
 const isValidCSSProperty = (property: string): boolean => {
   return property in document.body.style;
 };
@@ -99,29 +106,21 @@ export const StyleEditor: React.FC<StyleEditorProps> = ({ onStylesChange }) => {
 
   // Effect for element selection
   useEffect(() => {
-    const handleElementSelected = (message: { payload: { elementInfo: ElementInfo } }) => {
-      logger.log('Element selected:', message.payload.elementInfo);
-      setSelectedElement(message.payload.elementInfo);
-      resetStyleEditorState();
-    };
-
-    const handleElementUnselected = () => {
-      logger.log('Element unselected');
-      setSelectedElement(null);
-    };
-
-    const unsubscribeSelection = subscribe(
-      DOM_SELECTION_EVENTS.ELEMENT_SELECTED,
-      handleElementSelected
-    );
-    const unsubscribeUnselection = subscribe(
-      DOM_SELECTION_EVENTS.ELEMENT_UNSELECTED,
-      handleElementUnselected
-    );
-
+    const subscriptions = [
+      subscribe(DOM_SELECTION_EVENTS.ELEMENT_SELECTED, (message: ElementSelectionMessage) => {
+        logger.log('Element selected:', message.payload.elementInfo);
+        setSelectedElement(message.payload.elementInfo);
+        resetStyleEditorState();
+      }),
+      subscribe(DOM_SELECTION_EVENTS.ELEMENT_UNSELECTED, () => {
+        logger.log('Element unselected');
+        setSelectedElement(null);
+      }),
+    ];
+ 
+    // Clean up subscriptions
     return () => {
-      unsubscribeSelection();
-      unsubscribeUnselection();
+      subscriptions.forEach((unsubscribe) => unsubscribe());
     };
   }, []);
 

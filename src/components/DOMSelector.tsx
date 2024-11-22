@@ -6,54 +6,69 @@ import { DOM_SELECTION_EVENTS, ElementInfo, SelectElementPayload } from '../type
 import './DOMSelector.css';
 import { DOMTreeView } from './DOMTreeView';
 
-export const DOMSelector: React.FC = () => {
+interface DOMSelectorProps {}
+
+interface ElementSelectionMessage {
+  payload: {
+    elementInfo: ElementInfo;
+  };
+}
+
+// Utility functions
+const hasParentElement = (element: ElementInfo): boolean => {
+  return element.path.length > 0;
+};
+
+const getParentPath = (path: number[]): number[] => {
+  return path.slice(0, -1);
+};
+
+export const DOMSelector: React.FC<DOMSelectorProps> = () => {
+  // State declarations
   const [selectedElement, setSelectedElement] = useState<ElementInfo | null>(null);
   const { subscribe, sendMessage } = useConnectionManager();
   const logger = new Logger('DOMSelector');
 
-  const handleElementSelect = (elementInfo: ElementInfo) => {
-    const path: number[] = elementInfo.path;
+  // Event handlers
+  const handleElementSelect = (elementInfo: ElementInfo): void => {
     sendMessage<SelectElementPayload>(DOM_SELECTION_EVENTS.SELECT_ELEMENT, {
-      path,
+      path: elementInfo.path,
     });
   };
 
-  const handleParentSelect = () => {
-    if (!selectedElement) return;
-    if (selectedElement.path.length === 0) return;
+  const handleParentSelect = (): void => {
+    if (!selectedElement?.path.length) return;
 
     logger.log('Parent element selected');
-    const parentPath = selectedElement.path.slice(0, -1);
+    const parentPath = getParentPath(selectedElement.path);
     sendMessage<SelectElementPayload>(DOM_SELECTION_EVENTS.SELECT_ELEMENT, {
       path: parentPath,
     });
   };
 
-  const hasParentElement = (element: ElementInfo) => {
-    return element.path.length > 0;
-  };
-
+  // Message subscriptions
   useEffect(() => {
-    const unsubscribeSelection = subscribe(
-      DOM_SELECTION_EVENTS.ELEMENT_SELECTED,
-      (message: { payload: { elementInfo: ElementInfo } }) => {
-        logger.log('Element selected:', message.payload.elementInfo);
-        const elementInfo = message.payload.elementInfo;
-        setSelectedElement(elementInfo);
-      }
-    );
+    const subscriptions = [
+      subscribe(
+        DOM_SELECTION_EVENTS.ELEMENT_SELECTED,
+        (message: ElementSelectionMessage) => {
+          logger.log('Element selected:', message.payload.elementInfo);
+          setSelectedElement(message.payload.elementInfo);
+        }
+      ),
+      subscribe(DOM_SELECTION_EVENTS.ELEMENT_UNSELECTED, () => {
+        logger.log('Element unselected');
+        setSelectedElement(null);
+      }),
+    ];
 
-    const unsubscribeUnselection = subscribe(DOM_SELECTION_EVENTS.ELEMENT_UNSELECTED, () => {
-      logger.log('Element unselected');
-      setSelectedElement(null);
-    });
-
+    // Clean up subscriptions
     return () => {
-      unsubscribeSelection();
-      unsubscribeUnselection();
+      subscriptions.forEach(unsubscribe => unsubscribe());
     };
   }, []);
 
+  // Main render
   if (!selectedElement) {
     return (
       <div className="card">
@@ -74,26 +89,25 @@ export const DOMSelector: React.FC = () => {
         <h2 className="card-title">DOM Selector</h2>
       </div>
       <div className="card-content">
-        {selectedElement && (
-          <>
-            <div className="selected-element-info">
-              <div className="element-header">
-                <h3>Selected Element:</h3>
-                {hasParentElement(selectedElement) && (
-                  <button
-                    onClick={handleParentSelect}
-                    className="parent-nav-button"
-                    title="Go to parent element"
-                  >
-                    <ChevronUp size={16} />
-                  </button>
-                )}
-              </div>
-              <div className="element-path">{selectedElement.path.join(' > ')}</div>
-            </div>
-            <DOMTreeView elementInfo={selectedElement} onSelect={handleElementSelect} />
-          </>
-        )}
+        <div className="selected-element-info">
+          <div className="element-header">
+            <h3>Selected Element:</h3>
+            {hasParentElement(selectedElement) && (
+              <button
+                onClick={handleParentSelect}
+                className="parent-nav-button"
+                title="Go to parent element"
+              >
+                <ChevronUp size={16} />
+              </button>
+            )}
+          </div>
+          <div className="element-path">{selectedElement.path.join(' > ')}</div>
+        </div>
+        <DOMTreeView 
+          elementInfo={selectedElement}
+          onSelect={handleElementSelect}
+        />
       </div>
     </div>
   );
