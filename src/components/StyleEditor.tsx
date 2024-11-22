@@ -10,35 +10,40 @@ interface StyleEditorProps {
 }
 
 export const StyleEditor: React.FC<StyleEditorProps> = ({ onStylesChange }) => {
+  // State declarations
   const [selectedElement, setSelectedElement] = useState<ElementInfo | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [editedStyles, setEditedStyles] = useState<Record<string, string>>({});
   const [newProperty, setNewProperty] = useState('');
   const [newValue, setNewValue] = useState('');
   const [isAdding, setIsAdding] = useState(false);
+
+  // Utility instances
   const { subscribe, sendMessage } = useConnectionManager();
   const logger = new Logger('StyleEditor');
-
   const previousStylesRef = useRef<Partial<Record<keyof CSSStyleDeclaration, string>>>({});
 
+  // Element selection handling
   useEffect(() => {
-    const unsubscribeSelection = subscribe(
-      DOM_SELECTION_EVENTS.ELEMENT_SELECTED,
-      (message: { payload: { elementInfo: ElementInfo } }) => {
-        logger.log('Element selected:', message.payload.elementInfo);
-        setSelectedElement(message.payload.elementInfo);
-        setEditedStyles({});
-        previousStylesRef.current = {};
-        setIsAdding(false);
-        setNewProperty('');
-        setNewValue('');
-      }
-    );
+    const handleElementSelected = (message: { payload: { elementInfo: ElementInfo } }) => {
+      logger.log('Element selected:', message.payload.elementInfo);
+      setSelectedElement(message.payload.elementInfo);
+      resetStyleEditorState();
+    };
 
-    const unsubscribeUnselection = subscribe(DOM_SELECTION_EVENTS.ELEMENT_UNSELECTED, () => {
+    const handleElementUnselected = () => {
       logger.log('Element unselected');
       setSelectedElement(null);
-    });
+    };
+
+    const unsubscribeSelection = subscribe(
+      DOM_SELECTION_EVENTS.ELEMENT_SELECTED,
+      handleElementSelected
+    );
+    const unsubscribeUnselection = subscribe(
+      DOM_SELECTION_EVENTS.ELEMENT_UNSELECTED,
+      handleElementUnselected
+    );
 
     return () => {
       unsubscribeSelection();
@@ -46,6 +51,29 @@ export const StyleEditor: React.FC<StyleEditorProps> = ({ onStylesChange }) => {
     };
   }, []);
 
+  // Helper functions
+  const resetStyleEditorState = () => {
+    setEditedStyles({});
+    previousStylesRef.current = {};
+    setIsAdding(false);
+    setNewProperty('');
+    setNewValue('');
+  };
+
+  const isValidCSSProperty = (property: string): boolean => {
+    return property in document.body.style;
+  };
+
+  const notifyStyleChanges = (newStyles: Record<string, string>) => {
+    const modifications = Object.entries(newStyles).map(([prop, val]) => ({
+      property: prop,
+      value: val,
+    }));
+    logger.log('Styles changed:', modifications);
+    onStylesChange?.(modifications);
+  };
+
+  // Style handling functions
   const handleStyleChange = (property: keyof CSSStyleDeclaration, value: string) => {
     const newStyles = {
       ...editedStyles,
@@ -56,16 +84,13 @@ export const StyleEditor: React.FC<StyleEditorProps> = ({ onStylesChange }) => {
 
     if (newStyles[property] !== previousStylesRef.current[property]) {
       previousStylesRef.current = newStyles;
-      setTimeout(() => {
-        const modifications = Object.entries(newStyles).map(([prop, val]) => ({
-          property: prop,
-          value: val,
-        }));
-        logger.log('Styles changed:', modifications);
-        onStylesChange?.(modifications);
-      }, 0);
+      setTimeout(() => notifyStyleChanges(newStyles), 0);
     }
 
+    updateElementStyle(property, value);
+  };
+
+  const updateElementStyle = (property: keyof CSSStyleDeclaration, value: string) => {
     sendMessage(DOM_SELECTION_EVENTS.UPDATE_ELEMENT_STYLE, {
       path: selectedElement?.path,
       styles: {
@@ -81,7 +106,7 @@ export const StyleEditor: React.FC<StyleEditorProps> = ({ onStylesChange }) => {
 
     if (!trimmedProperty || !trimmedValue) return;
 
-    if (trimmedProperty in document.body.style) {
+    if (isValidCSSProperty(trimmedProperty)) {
       logger.log('Adding new style:', trimmedProperty, trimmedValue);
       handleStyleChange(trimmedProperty as keyof CSSStyleDeclaration, trimmedValue);
       setNewProperty('');
@@ -92,6 +117,22 @@ export const StyleEditor: React.FC<StyleEditorProps> = ({ onStylesChange }) => {
     }
   };
 
+  // Style filtering and sorting
+  const getFilteredStyleEntries = () => {
+    if (!selectedElement?.computedStyle) return [];
+
+    return Object.entries(selectedElement.computedStyle)
+      .filter(
+        ([key]) =>
+          typeof key === 'string' &&
+          isNaN(Number(key)) &&
+          typeof selectedElement.computedStyle[key as keyof CSSStyleDeclaration] !== 'function'
+      )
+      .filter(([key]) => key.toLowerCase().includes(searchTerm.toLowerCase()))
+      .sort(([a], [b]) => a.localeCompare(b));
+  };
+
+  // Render empty state
   if (!selectedElement?.computedStyle) {
     return (
       <div className="card">
@@ -105,16 +146,8 @@ export const StyleEditor: React.FC<StyleEditorProps> = ({ onStylesChange }) => {
     );
   }
 
-  const styleEntries = Object.entries(selectedElement.computedStyle)
-    .filter(([key]) => {
-      return (
-        typeof key === 'string' &&
-        isNaN(Number(key)) &&
-        typeof selectedElement.computedStyle[key as keyof CSSStyleDeclaration] !== 'function'
-      );
-    })
-    .filter(([key]) => key.toLowerCase().includes(searchTerm.toLowerCase()))
-    .sort(([a], [b]) => a.localeCompare(b));
+  // Main render
+  const styleEntries = getFilteredStyleEntries();
 
   return (
     <div className="card">
@@ -122,6 +155,7 @@ export const StyleEditor: React.FC<StyleEditorProps> = ({ onStylesChange }) => {
         <h2 className="card-title">Style Editor</h2>
       </div>
       <div className="style-editor">
+        {/* Search Section */}
         <div className="style-editor-search">
           <Search className="style-editor-search-icon" size={16} />
           <input
@@ -134,6 +168,7 @@ export const StyleEditor: React.FC<StyleEditorProps> = ({ onStylesChange }) => {
         </div>
 
         <div className="style-editor-content">
+          {/* Style Grid */}
           <div className="style-editor-grid">
             {styleEntries.map(([property, value]) => (
               <React.Fragment key={property}>
@@ -152,6 +187,7 @@ export const StyleEditor: React.FC<StyleEditorProps> = ({ onStylesChange }) => {
             ))}
           </div>
 
+          {/* Add Style Section */}
           <div className="style-editor-add">
             {isAdding ? (
               <div className="style-editor-add-form">
