@@ -42,12 +42,18 @@ export class ConnectionManager {
   private logger: Logger;
   private messageQueue: Message[] = [];
 
+  /**
+   * Private constructor to enforce singleton pattern
+   */
   private constructor() {
     this.logger = new Logger(this.context);
     this.setupConnections();
     this.initializeLogger();
   }
 
+  /**
+   * Initializes the logger with settings from storage
+   */
   private async initializeLogger() {
     const settings = await loadSettings();
     Logger.setLogLevel(settings.logLevel);
@@ -61,6 +67,22 @@ export class ConnectionManager {
     }
   }
 
+  /**
+   * Sets up connections for the ConnectionManager
+   */
+  private setupConnections() {
+    if (this.context === 'background') {
+      this.setupBackgroundConnections();
+      return;
+    }
+
+    this.setupClientConnections();
+  }
+
+  /**
+   * Gets the singleton instance of the ConnectionManager
+   * @returns The singleton instance of the ConnectionManager
+   */
   public static getInstance(): ConnectionManager {
     if (!ConnectionManager.instance) {
       ConnectionManager.instance = new ConnectionManager();
@@ -79,15 +101,6 @@ export class ConnectionManager {
     this.isSettingUp = false;
     this.isInvalidated = false;
     this.setupConnections();
-  }
-
-  private setupConnections() {
-    if (this.context === 'background') {
-      this.setupBackgroundConnections();
-      return;
-    }
-
-    this.setupClientConnections();
   }
 
   private setupClientConnections() {
@@ -192,6 +205,10 @@ export class ConnectionManager {
     });
   }
 
+  /**
+   * Sends a message to the specified target context
+   * @param message - The message to send
+   */
   public sendMessage<T>(type: MessageType, payload: T, target?: Context): Promise<void> {
     const message: Message<T> = {
       id: nanoid(),
@@ -217,6 +234,30 @@ export class ConnectionManager {
       }
       resolve();
     });
+  }
+
+  /**
+   * Adds a message handler for a specific message type
+   * @param type - The type of message to handle
+   * @param handler - The handler function for the message
+   */
+  public addMessageHandler(type: MessageType, handler: (message: Message) => void) {
+    if (!this.messageHandlers.has(type)) {
+      this.messageHandlers.set(type, []);
+    }
+    this.messageHandlers.get(type)!.push(handler);
+  }
+
+  /**
+   * Removes a message handler for a specific message type
+   * @param type - The type of message to remove the handler for
+   * @param handler - The handler function to remove
+   */
+  public removeMessageHandler(type: MessageType, handler: (message: Message) => void) {
+    const handlers = this.messageHandlers.get(type);
+    if (handlers) {
+      this.messageHandlers.set(type, handlers.filter(h => h !== handler));
+    }
   }
 
   public subscribe<T>(
