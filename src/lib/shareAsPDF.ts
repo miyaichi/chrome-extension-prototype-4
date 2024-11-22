@@ -209,7 +209,14 @@ export const shareAsPDF = async (
     }
     yOffset -= TEXT_CONFIG.lineHeight;
 
-    drawText(secondPage, 'Comment: ', TEXT_CONFIG.margin, yOffset, TEXT_CONFIG.titleFontSize, fonts);
+    drawText(
+      secondPage,
+      'Comment: ',
+      TEXT_CONFIG.margin,
+      yOffset,
+      TEXT_CONFIG.titleFontSize,
+      fonts
+    );
     yOffset -= TEXT_CONFIG.lineHeight;
     const commentLines = wrapText(
       comment,
