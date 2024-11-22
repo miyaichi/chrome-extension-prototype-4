@@ -79,7 +79,8 @@ export const shareAsPPT = async (
   imageData: string,
   comment: string,
   url: string,
-  startTag: string
+  startTag: string,
+  styleModifications: string
 ): Promise<true> => {
   const logger = new Logger('shareAsPPT');
 

@@ -5,13 +5,19 @@ import { Logger } from '../lib/logger';
 import { useSettings } from '../lib/settings';
 import { shareAsPDF } from '../lib/shareAsPDF';
 import { shareAsPPT } from '../lib/shareAsPPT';
-import { DOM_SELECTION_EVENTS, ElementInfo, UI_EVENTS } from '../types/domSelection';
+import {
+  DOM_SELECTION_EVENTS,
+  ElementInfo,
+  StyleModification,
+  UI_EVENTS,
+} from '../types/domSelection';
 import './ShareCapture.css';
 import { formatElementTag } from './utils/htmlTagFormatter';
 
 interface ShareCaptureProps {
   onClose: () => void;
   initialSelectedElement: ElementInfo | null;
+  styleModifications: StyleModification[];
 }
 
 interface CaptureInfo {
@@ -42,7 +48,17 @@ const initialCaptureInfo: CaptureInfo = {
   captureUrl: null,
 };
 
-export const ShareCapture: React.FC<ShareCaptureProps> = ({ onClose, initialSelectedElement }) => {
+const formatStyleModifications = (styleModifications: StyleModification[]) => {
+  if (styleModifications.length === 0) return '';
+
+  return styleModifications.map((mod) => `${mod.property}: ${mod.value}`).join('\n');
+};
+
+export const ShareCapture: React.FC<ShareCaptureProps> = ({
+  onClose,
+  initialSelectedElement,
+  styleModifications,
+}) => {
   // State declarations
   const { settings } = useSettings();
   const { subscribe } = useConnectionManager();
@@ -76,7 +92,8 @@ export const ShareCapture: React.FC<ShareCaptureProps> = ({ onClose, initialSele
         imageDataUrl,
         comment,
         captureInfo.captureUrl || '',
-        captureInfo.selectedElement?.startTag || ''
+        captureInfo.selectedElement?.startTag || '',
+        formatStyleModifications(styleModifications)
       );
 
       logger.debug('Capture shared');

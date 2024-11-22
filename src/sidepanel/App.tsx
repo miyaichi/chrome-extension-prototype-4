@@ -167,7 +167,11 @@ export const App = () => {
           <div className="components-container">
             <DOMSelector />
             {showShareCapture && (
-              <ShareCapture onClose={handleShareClose} initialSelectedElement={selectedElement} />
+              <ShareCapture
+                onClose={handleShareClose}
+                initialSelectedElement={selectedElement}
+                styleModifications={styleModifications}
+              />
             )}
             <StyleEditor onStylesChange={handleStylesChange} />
           </div>
