@@ -24,6 +24,10 @@ const getParentPath = (path: number[]): number[] => {
   return path.slice(0, -1);
 };
 
+/**
+ * DOMSelector component that allows users to select and navigate DOM elements
+ * @returns A React element representing the DOM selector
+ */
 export const DOMSelector: React.FC<DOMSelectorProps> = () => {
   // State declarations
   const [selectedElement, setSelectedElement] = useState<ElementInfo | null>(null);
