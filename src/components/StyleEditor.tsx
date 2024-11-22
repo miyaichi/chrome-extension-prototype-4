@@ -104,7 +104,7 @@ export const StyleEditor: React.FC<StyleEditorProps> = ({ onStylesChange }) => {
     }
   };
 
-  // Effect for element selection
+  // Message subscriptions
   useEffect(() => {
     const subscriptions = [
       subscribe(DOM_SELECTION_EVENTS.ELEMENT_SELECTED, (message: ElementSelectionMessage) => {
