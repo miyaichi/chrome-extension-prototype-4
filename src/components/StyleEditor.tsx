@@ -148,9 +148,7 @@ export const StyleEditor: React.FC<StyleEditorProps> = ({ onStylesChange }) => {
           <h2 className="card-title">Style Editor</h2>
         </div>
         <div className="style-editor-empty">
-          <div className="style-editor-empty">
             {chrome.i18n.getMessage('styleEditorEmptyState')}
-          </div>
         </div>
       </div>
     );
