@@ -4,6 +4,7 @@ import { DOMSelector } from '../components/DOMSelector';
 import { SettingsPanel } from '../components/SettingsPanel';
 import { ShareCapture } from '../components/ShareCapture';
 import { StyleEditor } from '../components/StyleEditor';
+import { Tooltip } from '../components/Tooltip';
 import { useConnectionManager } from '../lib/connectionManager';
 import { Logger } from '../lib/logger';
 import '../styles/common.css';
@@ -72,38 +73,38 @@ export const App = () => {
     };
   }, [isSelectionMode, showSettings]);
 
-  // Monitor selection and tab events
+  // Message subscriptions
   useEffect(() => {
-    const unsubscribeSelection = subscribe(
-      DOM_SELECTION_EVENTS.ELEMENT_SELECTED,
-      (message: { payload: { elementInfo: ElementInfo } }) => {
-        logger.log('Element selected:', message.payload.elementInfo);
-        setSelectedElement(message.payload.elementInfo);
-      }
-    );
+    const subscriotions = [
+      subscribe(
+        DOM_SELECTION_EVENTS.ELEMENT_SELECTED,
+        (message: { payload: { elementInfo: ElementInfo } }) => {
+          logger.log('Element selected:', message.payload.elementInfo);
+          setSelectedElement(message.payload.elementInfo);
+        }
+      ),
 
-    const unsubscribeUnselection = subscribe(DOM_SELECTION_EVENTS.ELEMENT_UNSELECTED, () => {
-      logger.log('Element unselected');
-      setSelectedElement(null);
-    });
+      subscribe(DOM_SELECTION_EVENTS.ELEMENT_UNSELECTED, () => {
+        logger.log('Element unselected');
+        setSelectedElement(null);
+      }),
 
-    const unsubscribeTabActivated = subscribe(BROWSER_EVENTS.TAB_ACTIVATED, () => {
-      logger.log('Tab activated, cleaning up');
-      cleanup();
-    });
+      subscribe(BROWSER_EVENTS.TAB_ACTIVATED, () => {
+        logger.log('Tab activated, cleaning up');
+        cleanup();
+      }),
 
-    const unsubscribeTabUpdate = subscribe(BROWSER_EVENTS.TAB_UPDATED, () => {
-      logger.log('Tab updated, cleaning up');
-      cleanup();
-    });
+      subscribe(BROWSER_EVENTS.TAB_UPDATED, () => {
+        logger.log('Tab updated, cleaning up');
+        cleanup();
+      }),
+    ];
 
+    // Clean up subscriptions
     return () => {
-      unsubscribeSelection();
-      unsubscribeUnselection();
-      unsubscribeTabActivated();
-      unsubscribeTabUpdate();
+      subscriotions.forEach((unsubscribe) => unsubscribe());
     };
-  }, [subscribe]);
+  }, []);
 
   const handleCapture = () => {
     setShowShareCapture(true);
@@ -144,15 +145,19 @@ export const App = () => {
           </button>
 
           <div className="header-actions">
-            <button onClick={handleCapture} className="icon-button">
-              <Camera size={16} />
-            </button>
-            <button
-              onClick={() => setShowSettings(!showSettings)}
-              className={`icon-button ${showSettings ? 'active' : ''}`}
-            >
-              <Settings size={16} />
-            </button>
+            <Tooltip content="Capture a screenshot of the current tab">
+              <button onClick={handleCapture} className="icon-button">
+                <Camera size={16} />
+              </button>
+            </Tooltip>
+            <Tooltip content="Settings">
+              <button
+                onClick={() => setShowSettings(!showSettings)}
+                className={`icon-button ${showSettings ? 'active' : ''}`}
+              >
+                <Settings size={16} />
+              </button>
+            </Tooltip>
           </div>
         </div>
 

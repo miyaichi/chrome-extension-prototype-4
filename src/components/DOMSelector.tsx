@@ -5,6 +5,7 @@ import { Logger } from '../lib/logger';
 import { DOM_SELECTION_EVENTS, ElementInfo, SelectElementPayload } from '../types/domSelection';
 import './DOMSelector.css';
 import { DOMTreeView } from './DOMTreeView';
+import { Tooltip } from './Tooltip';
 
 interface DOMSelectorProps {}
 
@@ -91,13 +92,15 @@ export const DOMSelector: React.FC<DOMSelectorProps> = () => {
           <div className="element-header">
             <h3>Selected Element:</h3>
             {hasParentElement(selectedElement) && (
-              <button
-                onClick={handleParentSelect}
-                className="parent-nav-button"
-                title="Go to parent element"
-              >
-                <ChevronUp size={16} />
-              </button>
+              <Tooltip content="Go to parent element">
+                <button
+                  onClick={handleParentSelect}
+                  className="parent-nav-button"
+                  title="Go to parent element"
+                >
+                  <ChevronUp size={16} />
+                </button>
+              </Tooltip>
             )}
           </div>
           <div className="element-path">{selectedElement.path.join(' > ')}</div>
