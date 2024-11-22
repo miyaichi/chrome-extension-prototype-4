@@ -29,9 +29,11 @@ export const DOMTreeView = ({ elementInfo, onSelect }: Props) => {
       <div key={currentPath} className="tree-node">
         <div className="tree-node-content">
           {hasChildren ? (
-            <div className="tree-chevron" onClick={() => toggleNode(currentPath)}>
-              {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-            </div>
+            <Tooltip content={isExpanded ? 'Collapse' : 'Expand'}>
+              <div className="tree-chevron" onClick={() => toggleNode(currentPath)}>
+                {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+              </div>
+            </Tooltip>
           ) : (
             <div className="tree-chevron-placeholder" />
           )}
