@@ -256,7 +256,10 @@ export class ConnectionManager {
   public removeMessageHandler(type: MessageType, handler: (message: Message) => void) {
     const handlers = this.messageHandlers.get(type);
     if (handlers) {
-      this.messageHandlers.set(type, handlers.filter(h => h !== handler));
+      this.messageHandlers.set(
+        type,
+        handlers.filter((h) => h !== handler)
+      );
     }
   }
 
