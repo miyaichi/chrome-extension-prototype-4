@@ -32,6 +32,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: all 0.2s ease;
 }
 
 .icon-button:hover {
@@ -39,7 +40,14 @@
 }
 
 .icon-button.active {
-  color: var(--border-color);
+  background-color: var(--primary-color);
+  color: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.icon-button.active:hover {
+  background-color: #2563eb;
+  transform: translateY(-1px);
 }
 
 .icon-button.disabled {
