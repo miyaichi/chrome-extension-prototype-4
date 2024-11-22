@@ -39,11 +39,18 @@ const manager = ConnectionManager.getInstance();
 let currentTabId: number;
 let selectionModeEnabled = false;
 
-// Style management
+/**
+ * Updates the cursor style based on the selection mode
+ * @param enabled - Boolean indicating whether selection mode is enabled
+ */
 const updateCursorStyle = (enabled: boolean): void => {
   document.body.style.cursor = enabled ? 'crosshair' : '';
 };
 
+/**
+ * Saves the original styles of an element before applying highlight styles
+ * @param element - The HTML element to save the styles for
+ */
 const saveElementStyle = (element: HTMLElement): void => {
   if (styleMap.has(currentTabId)) {
     restoreElementStyle();
