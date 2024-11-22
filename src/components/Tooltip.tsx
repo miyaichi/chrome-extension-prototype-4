@@ -2,10 +2,18 @@ import React, { useEffect, useRef, useState } from 'react';
 import './Tooltip.css';
 
 interface TooltipProps {
+  /** The content to be displayed inside the tooltip */
   content: string;
+  /** The children elements that will trigger the tooltip on hover */
   children: React.ReactNode;
 }
 
+/**
+ * Tooltip component that displays a tooltip with the given content when the user hovers over the children elements
+ * @param content - The content to be displayed inside the tooltip
+ * @param children - The children elements that will trigger the tooltip on hover
+ * @returns A React element representing the tooltip
+ */
 export const Tooltip = ({ content, children }: TooltipProps) => {
   const [isVisible, setIsVisible] = useState(false);
   const tooltipRef = useRef<HTMLDivElement>(null);
