@@ -161,14 +161,7 @@ const layoutSection = (
     pages.push(page);
   }
 
-  drawText(
-    page,
-    section.title,
-    TEXT_CONFIG.margin,
-    yOffset,
-    TEXT_CONFIG.titleFontSize,
-    fonts
-  );
+  drawText(page, section.title, TEXT_CONFIG.margin, yOffset, TEXT_CONFIG.titleFontSize, fonts);
   yOffset -= TEXT_CONFIG.lineHeight;
 
   const contentLines = wrapText(
@@ -184,24 +177,19 @@ const layoutSection = (
       pages.push(page);
     }
 
-    drawText(
-      page,
-      line,
-      TEXT_CONFIG.margin,
-      yOffset,
-      TEXT_CONFIG.fontSize,
-      fonts
-    );
+    drawText(page, line, TEXT_CONFIG.margin, yOffset, TEXT_CONFIG.fontSize, fonts);
     yOffset -= TEXT_CONFIG.lineHeight;
   }
 
   return { page, yOffset: yOffset - TEXT_CONFIG.lineHeight };
 };
 
-const shouldCreateNewPage = (yOffset: number): boolean => 
+const shouldCreateNewPage = (yOffset: number): boolean =>
   yOffset - TEXT_CONFIG.lineHeight < TEXT_CONFIG.margin;
 
-const createNewInfoPage = (pdfDoc: PDFDocument): {
+const createNewInfoPage = (
+  pdfDoc: PDFDocument
+): {
   page: PDFPage;
   yOffset: number;
 } => {
@@ -219,13 +207,23 @@ const createInfoPage = (
   let { page, yOffset } = createNewInfoPage(pdfDoc);
   pages.push(page);
 
-  sections.forEach(section => {
+  sections.forEach((section) => {
     ({ page, yOffset } = layoutSection(pdfDoc, pages, page, section, yOffset, fonts));
   });
 
   return pages;
 };
 
+/**
+ * Shares the content as a PDF document.
+ * @param imageData - The image data to be included in the PDF.
+ * @param comment - A comment to be included in the PDF.
+ * @param url - The URL to be included in the PDF.
+ * @param startTag - The start tag for the PDF content.
+ * @param styleModifications - Style modifications to be applied to the PDF content.
+ * @returns A promise that resolves to true if the PDF is successfully created.
+ * @throws Will throw an error if imageData or url is not provided.
+ */
 export const shareAsPDF = async (
   imageData: string,
   comment: string,
