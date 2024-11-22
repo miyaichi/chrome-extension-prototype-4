@@ -7,10 +7,18 @@ import { Tooltip } from './Tooltip';
 import { formatElementTag } from './utils/htmlTagFormatter';
 
 interface Props {
+  /** The element information to display in the tree view */
   elementInfo: ElementInfo;
+  /** Callback function to handle node selection */
   onSelect?: (node: ElementInfo) => void;
 }
 
+/**
+ * Component to render a tree view of DOM elements
+ * @param elementInfo - The element information to display in the tree view
+ * @param onSelect - Callback function to handle node selection
+ * @returns A React element representing the DOM tree view
+ */
 export const DOMTreeView = ({ elementInfo, onSelect }: Props) => {
   const [expandedNodes, setExpandedNodes] = useState<string[]>([]);
 
@@ -60,7 +68,5 @@ export const DOMTreeView = ({ elementInfo, onSelect }: Props) => {
     );
   };
 
-  return (
-    <div className="tree-container">{elementInfo.children.map((child) => renderNode(child))}</div>
-  );
+  return <div className="dom-tree-view">{renderNode(elementInfo)}</div>;
 };
