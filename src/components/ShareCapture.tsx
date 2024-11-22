@@ -168,6 +168,7 @@ export const ShareCapture: React.FC<ShareCaptureProps> = ({ onClose, initialSele
     );
   };
 
+  // Main render
   return (
     <div className="capture-modal">
       <div className="capture-container">
