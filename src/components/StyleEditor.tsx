@@ -1,11 +1,15 @@
 import { Check, Plus, Search, X } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useConnectionManager } from '../lib/connectionManager';
 import { Logger } from '../lib/logger';
-import { DOM_SELECTION_EVENTS, ElementInfo } from '../types/domSelection';
+import { DOM_SELECTION_EVENTS, ElementInfo, StyleModification } from '../types/domSelection';
 import './StyleEditor.css';
 
-export const StyleEditor: React.FC = () => {
+interface StyleEditorProps {
+  onStylesChange?: (modifications: StyleModification[]) => void;
+}
+
+export const StyleEditor: React.FC<StyleEditorProps> = ({ onStylesChange }) => {
   const [selectedElement, setSelectedElement] = useState<ElementInfo | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [editedStyles, setEditedStyles] = useState<Record<string, string>>({});
@@ -15,6 +19,8 @@ export const StyleEditor: React.FC = () => {
   const { subscribe, sendMessage } = useConnectionManager();
   const logger = new Logger('StyleEditor');
 
+  const previousStylesRef = useRef<Partial<Record<keyof CSSStyleDeclaration, string>>>({});
+
   useEffect(() => {
     const unsubscribeSelection = subscribe(
       DOM_SELECTION_EVENTS.ELEMENT_SELECTED,
@@ -22,6 +28,7 @@ export const StyleEditor: React.FC = () => {
         logger.log('Element selected:', message.payload.elementInfo);
         setSelectedElement(message.payload.elementInfo);
         setEditedStyles({});
+        previousStylesRef.current = {};
         setIsAdding(false);
         setNewProperty('');
         setNewValue('');
@@ -39,29 +46,50 @@ export const StyleEditor: React.FC = () => {
     };
   }, []);
 
-  const handleStyleChange = (property: string, value: string) => {
-    setEditedStyles((prev) => ({
-      ...prev,
+  const handleStyleChange = (property: keyof CSSStyleDeclaration, value: string) => {
+    const newStyles = {
+      ...editedStyles,
       [property]: value,
-    }));
+    };
 
-    logger.log('Style changed:', property, value);
+    setEditedStyles(newStyles);
+
+    if (newStyles[property] !== previousStylesRef.current[property]) {
+      previousStylesRef.current = newStyles;
+      setTimeout(() => {
+        const modifications = Object.entries(newStyles).map(([prop, val]) => ({
+          property: prop,
+          value: val,
+        }));
+        logger.log('Styles changed:', modifications);
+        onStylesChange?.(modifications);
+      }, 0);
+    }
+
     sendMessage(DOM_SELECTION_EVENTS.UPDATE_ELEMENT_STYLE, {
       path: selectedElement?.path,
       styles: {
         [property]: value,
       },
     });
+    logger.log('Style updated:', property, value);
   };
 
   const handleAddStyle = () => {
-    if (!newProperty.trim() || !newValue.trim()) return;
+    const trimmedProperty = newProperty.trim();
+    const trimmedValue = newValue.trim();
 
-    logger.log('Adding new style:', newProperty, newValue);
-    handleStyleChange(newProperty.trim(), newValue.trim());
-    setNewProperty('');
-    setNewValue('');
-    setIsAdding(false);
+    if (!trimmedProperty || !trimmedValue) return;
+
+    if (trimmedProperty in document.body.style) {
+      logger.log('Adding new style:', trimmedProperty, trimmedValue);
+      handleStyleChange(trimmedProperty as keyof CSSStyleDeclaration, trimmedValue);
+      setNewProperty('');
+      setNewValue('');
+      setIsAdding(false);
+    } else {
+      logger.warn('Invalid CSS property:', trimmedProperty);
+    }
   };
 
   if (!selectedElement?.computedStyle) {
@@ -78,7 +106,13 @@ export const StyleEditor: React.FC = () => {
   }
 
   const styleEntries = Object.entries(selectedElement.computedStyle)
-    .filter(([key]) => typeof key === 'string' && isNaN(Number(key)))
+    .filter(([key]) => {
+      return (
+        typeof key === 'string' &&
+        isNaN(Number(key)) &&
+        typeof selectedElement.computedStyle[key as keyof CSSStyleDeclaration] !== 'function'
+      );
+    })
     .filter(([key]) => key.toLowerCase().includes(searchTerm.toLowerCase()))
     .sort(([a], [b]) => a.localeCompare(b));
 
@@ -107,10 +141,12 @@ export const StyleEditor: React.FC = () => {
                   {property}
                 </div>
                 <input
-                  value={editedStyles[property] ?? String(value)}
-                  onChange={(e) => handleStyleChange(property, e.target.value)}
+                  key={property}
+                  defaultValue={editedStyles[property] ?? String(value)}
+                  onBlur={(e) =>
+                    handleStyleChange(property as keyof CSSStyleDeclaration, e.target.value)
+                  }
                   className="style-editor-input"
-                  title={editedStyles[property] ?? String(value)}
                 />
               </React.Fragment>
             ))}

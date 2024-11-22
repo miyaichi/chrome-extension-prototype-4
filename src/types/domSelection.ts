@@ -51,3 +51,8 @@ export interface Message<T = unknown> {
   type: DOMSelectionEvent;
   payload: T;
 }
+
+export interface StyleModification {
+  property: string;
+  value: string;
+}

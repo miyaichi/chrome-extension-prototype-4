@@ -11,6 +11,7 @@ import {
   BROWSER_EVENTS,
   DOM_SELECTION_EVENTS,
   ElementInfo,
+  StyleModification,
   UI_EVENTS,
 } from '../types/domSelection';
 import './App.css';
@@ -20,6 +21,7 @@ export const App = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [showShareCapture, setShowShareCapture] = useState(false);
   const [selectedElement, setSelectedElement] = useState<ElementInfo | null>(null);
+  const [styleModifications, setStyleModifications] = useState<StyleModification[]>([]);
   const { sendMessage, subscribe } = useConnectionManager();
   const logger = new Logger('SidePanel');
 
@@ -112,6 +114,10 @@ export const App = () => {
     setShowShareCapture(false);
   };
 
+  const handleStylesChange = (modifications: StyleModification[]) => {
+    setStyleModifications(modifications);
+  };
+
   const toggleSelectionMode = () => {
     const newMode = !isSelectionMode;
     if (!newMode) {
@@ -158,7 +164,7 @@ export const App = () => {
             {showShareCapture && (
               <ShareCapture onClose={handleShareClose} initialSelectedElement={selectedElement} />
             )}
-            <StyleEditor />
+            <StyleEditor onStylesChange={handleStylesChange} />
           </div>
         )}
       </div>
