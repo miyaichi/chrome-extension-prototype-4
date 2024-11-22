@@ -1,6 +1,6 @@
 import fontBytes from '@assets/fonts/NotoSansJP-Regular.otf';
 import fontkit from '@pdf-lib/fontkit';
-import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
+import { PDFDocument, PDFPage, rgb, StandardFonts } from 'pdf-lib';
 import { downloadFile } from '../utils/download';
 import { formatTimestamp, generateFilename } from '../utils/formatters';
 import { Logger } from './logger';
@@ -53,7 +53,7 @@ const initializeFonts = async (pdfDoc: PDFDocument): Promise<FontConfig> => {
 };
 
 // Image processing and scaling
-const processImage = async (
+const calculateImageDimensions = async (
   pdfDoc: PDFDocument,
   imageData: string
 ): Promise<{
@@ -136,6 +136,45 @@ const drawText = (
   }
 };
 
+const createImagePage = (
+  pdfDoc: PDFDocument,
+  image: Awaited<ReturnType<typeof PDFDocument.prototype.embedPng>>,
+  dimensions: ImageDimensions
+): PDFPage => {
+  const page = pdfDoc.addPage([PAGE_CONFIG.WIDTH, PAGE_CONFIG.HEIGHT]);
+  page.drawImage(image, dimensions);
+  return page;
+};
+
+const createInfoPage = (
+  pdfDoc: PDFDocument,
+  sections: { title: string; content: string }[],
+  fonts: FontConfig
+): PDFPage => {
+  const page = pdfDoc.addPage([PAGE_CONFIG.WIDTH, PAGE_CONFIG.HEIGHT]);
+  let yOffset = 800;
+
+  sections.forEach((section) => {
+    drawText(page, section.title, TEXT_CONFIG.margin, yOffset, TEXT_CONFIG.titleFontSize, fonts);
+    yOffset -= TEXT_CONFIG.lineHeight;
+
+    const contentLines = wrapText(
+      section.content,
+      fonts.japanese,
+      TEXT_CONFIG.maxWidth,
+      TEXT_CONFIG.fontSize
+    );
+
+    contentLines.forEach((line) => {
+      drawText(page, line, TEXT_CONFIG.margin, yOffset, TEXT_CONFIG.fontSize, fonts);
+      yOffset -= TEXT_CONFIG.lineHeight;
+    });
+    yOffset -= TEXT_CONFIG.lineHeight;
+  });
+
+  return page;
+};
+
 export const shareAsPDF = async (
   imageData: string,
   comment: string,
@@ -145,97 +184,31 @@ export const shareAsPDF = async (
 ): Promise<true> => {
   const logger = new Logger('shareAsPDF');
 
+  if (!imageData) throw new Error('Image data is required');
+  if (!url) throw new Error('URL is required');
+
   try {
     const pdfDoc = await PDFDocument.create();
     const fonts = await initializeFonts(pdfDoc);
-    const { image, dimensions } = await processImage(pdfDoc, imageData);
+    const { image, dimensions } = await calculateImageDimensions(pdfDoc, imageData);
 
-    // Page 1: Screenshot page
-    const firstPage = pdfDoc.addPage([PAGE_CONFIG.WIDTH, PAGE_CONFIG.HEIGHT]);
-    firstPage.drawImage(image, dimensions);
+    createImagePage(pdfDoc, image, dimensions);
 
-    // Page 2: Information page
-    const secondPage = pdfDoc.addPage([PAGE_CONFIG.WIDTH, PAGE_CONFIG.HEIGHT]);
-    let yOffset = 800;
     const now = new Date();
+    const sections = [
+      { title: 'Date and time: ', content: formatTimestamp(now) },
+      { title: 'URL: ', content: url },
+      { title: 'Element start tag: ', content: startTag },
+      { title: 'Comment: ', content: comment },
+    ];
 
-    // Add text to the page
-    drawText(
-      secondPage,
-      'Date and time: ',
-      TEXT_CONFIG.margin,
-      yOffset,
-      TEXT_CONFIG.titleFontSize,
-      fonts
-    );
-    yOffset -= TEXT_CONFIG.lineHeight;
-    drawText(
-      secondPage,
-      formatTimestamp(now),
-      TEXT_CONFIG.margin,
-      yOffset,
-      TEXT_CONFIG.fontSize,
-      fonts
-    );
-    yOffset -= TEXT_CONFIG.lineHeight * 2;
+    createInfoPage(pdfDoc, sections, fonts);
 
-    drawText(secondPage, 'URL: ', TEXT_CONFIG.margin, yOffset, TEXT_CONFIG.titleFontSize, fonts);
-    yOffset -= TEXT_CONFIG.lineHeight;
-    const urlLines = wrapText(url, fonts.japanese, TEXT_CONFIG.maxWidth, TEXT_CONFIG.fontSize);
-    for (const line of urlLines) {
-      drawText(secondPage, line, TEXT_CONFIG.margin, yOffset, TEXT_CONFIG.fontSize, fonts);
-      yOffset -= TEXT_CONFIG.lineHeight;
-    }
-    yOffset -= TEXT_CONFIG.lineHeight;
-
-    drawText(
-      secondPage,
-      'Element start tag: ',
-      TEXT_CONFIG.margin,
-      yOffset,
-      TEXT_CONFIG.titleFontSize,
-      fonts
-    );
-    yOffset -= TEXT_CONFIG.lineHeight;
-    const startTagLines = wrapText(
-      startTag,
-      fonts.japanese,
-      TEXT_CONFIG.maxWidth,
-      TEXT_CONFIG.fontSize
-    );
-    for (const line of startTagLines) {
-      drawText(secondPage, line, TEXT_CONFIG.margin, yOffset, TEXT_CONFIG.fontSize, fonts);
-      yOffset -= TEXT_CONFIG.lineHeight;
-    }
-    yOffset -= TEXT_CONFIG.lineHeight;
-
-    drawText(
-      secondPage,
-      'Comment: ',
-      TEXT_CONFIG.margin,
-      yOffset,
-      TEXT_CONFIG.titleFontSize,
-      fonts
-    );
-    yOffset -= TEXT_CONFIG.lineHeight;
-    const commentLines = wrapText(
-      comment,
-      fonts.japanese,
-      TEXT_CONFIG.maxWidth,
-      TEXT_CONFIG.fontSize
-    );
-    for (const line of commentLines) {
-      drawText(secondPage, line, TEXT_CONFIG.margin, yOffset, TEXT_CONFIG.fontSize, fonts);
-      yOffset -= TEXT_CONFIG.lineHeight;
-    }
-
-    // generate the PDF file
     const pdfBytes = await pdfDoc.save({
       useObjectStreams: false,
       addDefaultPage: false,
     });
 
-    // Execute the download
     const pdfBlob = new Blob([pdfBytes], { type: 'application/pdf' });
     await downloadFile(pdfBlob, generateFilename(now, 'pdf'), {
       saveAs: false,
