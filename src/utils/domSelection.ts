@@ -3,6 +3,8 @@ import { ElementInfo } from '../types/domSelection';
 
 /**
  * Get the DOM path from root to the given element as an array of indices
+ * @param element - The HTML element to get the path for
+ * @returns An array of indices representing the path from root to the given element
  */
 export const getElementPath = (element: HTMLElement): number[] => {
   const path: number[] = [];
@@ -21,6 +23,8 @@ export const getElementPath = (element: HTMLElement): number[] => {
 
 /**
  * Find an element in the DOM using a path of indices
+ * @param path - An array of indices representing the path to the element
+ * @returns The HTML element found at the given path, or null if not found
  */
 export const getElementByPath = (path: number[]): HTMLElement | null => {
   let current: HTMLElement = document.documentElement;
@@ -41,6 +45,8 @@ export const getElementByPath = (path: number[]): HTMLElement | null => {
 
 /**
  * Get the opening HTML tag of an element
+ * @param element - The HTML element to get the start tag for
+ * @returns The opening HTML tag of the element as a string
  */
 export const getElementStartTag = (element: HTMLElement): string => {
   const clone = element.cloneNode(false) as HTMLElement;
@@ -49,6 +55,9 @@ export const getElementStartTag = (element: HTMLElement): string => {
 
 /**
  * Truncate a string to a maximum length for display
+ * @param tag - The string to truncate
+ * @param maxLength - The maximum length of the truncated string (default is 20)
+ * @returns The truncated string, with "..." appended if it was truncated
  */
 export const truncateStartTag = (tag: string, maxLength = 20): string => {
   return tag.length > maxLength ? `${tag.slice(0, maxLength)}...` : tag;
