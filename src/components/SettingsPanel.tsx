@@ -4,6 +4,10 @@ import { LogLevel, ShareFormat, useSettings } from '../lib/settings';
 import '../styles/common.css';
 import './SettingsPanel.css';
 
+/**
+ * SettingsPanel component that allows users to configure application settings
+ * @returns A React element representing the settings panel
+ */
 export const SettingsPanel: React.FC = () => {
   const { settings, updateSettings, loading, error } = useSettings();
 
@@ -55,7 +59,7 @@ export const SettingsPanel: React.FC = () => {
             onChange={(e) => updateSettings({ shareFormat: e.target.value as ShareFormat })}
           >
             <option value="pdf">PDF</option>
-            <option value="ppt">PowerPoint</option>
+            <option value="ppt">PPT</option>
           </select>
         </div>
       </div>
