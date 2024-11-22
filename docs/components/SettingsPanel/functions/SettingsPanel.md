@@ -8,6 +8,8 @@
 
 > **SettingsPanel**(`props`, `deprecatedLegacyContext`?): `ReactNode`
 
+SettingsPanel component that allows users to configure application settings
+
 ## Parameters
 
 • **props**
@@ -24,6 +26,8 @@
 
 `ReactNode`
 
+A React element representing the settings panel
+
 ## Defined in
 
-src/components/SettingsPanel.tsx:7
+src/components/SettingsPanel.tsx:11

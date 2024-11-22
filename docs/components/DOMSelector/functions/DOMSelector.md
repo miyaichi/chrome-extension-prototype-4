@@ -8,6 +8,8 @@
 
 > **DOMSelector**(`props`, `deprecatedLegacyContext`?): `ReactNode`
 
+DOMSelector component that allows users to select and navigate DOM elements
+
 ## Parameters
 
 • **props**: `DOMSelectorProps`
@@ -24,6 +26,8 @@
 
 `ReactNode`
 
+A React element representing the DOM selector
+
 ## Defined in
 
-src/components/DOMSelector.tsx:27
+src/components/DOMSelector.tsx:31

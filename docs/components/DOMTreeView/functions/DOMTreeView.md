@@ -8,6 +8,8 @@
 
 > **DOMTreeView**(`__namedParameters`): `Element`
 
+Component to render a tree view of DOM elements
+
 ## Parameters
 
 • **\_\_namedParameters**: `Props`
@@ -16,6 +18,8 @@
 
 `Element`
 
+A React element representing the DOM tree view
+
 ## Defined in
 
-src/components/DOMTreeView.tsx:14
+src/components/DOMTreeView.tsx:22
