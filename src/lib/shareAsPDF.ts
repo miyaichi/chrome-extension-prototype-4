@@ -5,6 +5,8 @@ import { downloadFile } from '../utils/download';
 import { formatTimestamp, generateFilename } from '../utils/formatters';
 import { Logger } from './logger';
 
+const logger = new Logger('shareAsPDF');
+
 // Type definitions
 type ImageDimensions = {
   width: number;
@@ -44,15 +46,18 @@ const TEXT_CONFIG: TextConfig = {
 
 // Initialize fonts
 const initializeFonts = async (pdfDoc: PDFDocument): Promise<FontConfig> => {
+  logger.debug('Initializing fonts...');
   pdfDoc.registerFontkit(fontkit);
 
-  return {
+  const fonts = {
     japanese: await pdfDoc.embedFont(fontBytes, { subset: false }),
     fallback: await pdfDoc.embedFont(StandardFonts.Helvetica),
   };
+  
+  logger.debug('Fonts initialized successfully');
+  return fonts;
 };
 
-// Image processing and scaling
 const calculateImageDimensions = async (
   pdfDoc: PDFDocument,
   imageData: string
@@ -60,6 +65,8 @@ const calculateImageDimensions = async (
   image: any;
   dimensions: ImageDimensions;
 }> => {
+  logger.debug('Processing image data for PDF...');
+  
   const imageBytes = Uint8Array.from(atob(imageData.split(',')[1]), (c) => c.charCodeAt(0));
   const image = await pdfDoc.embedPng(imageBytes);
   const imageDims = image.scale(1);
@@ -74,19 +81,23 @@ const calculateImageDimensions = async (
   const scaledWidth = imageDims.width * scale;
   const scaledHeight = imageDims.height * scale;
 
-  return {
-    image,
-    dimensions: {
-      width: scaledWidth,
-      height: scaledHeight,
-      x: (PAGE_CONFIG.WIDTH - scaledWidth) / 2,
-      y: (PAGE_CONFIG.HEIGHT - scaledHeight) / 2,
-    },
+  const dimensions = {
+    width: scaledWidth,
+    height: scaledHeight,
+    x: (PAGE_CONFIG.WIDTH - scaledWidth) / 2,
+    y: (PAGE_CONFIG.HEIGHT - scaledHeight) / 2,
   };
+
+  logger.debug('Image dimensions calculated', { 
+    originalSize: { width: imageDims.width, height: imageDims.height },
+    scaledSize: { width: scaledWidth, height: scaledHeight }
+  });
+
+  return { image, dimensions };
 };
 
-// Text wrapping
 const wrapText = (text: string, font: any, maxWidth: number, fontSize: number): string[] => {
+  logger.debug('Wrapping text to fit width', { maxWidth, fontSize });
   const lines: string[] = [];
   let remainingText = text;
 
@@ -104,10 +115,10 @@ const wrapText = (text: string, font: any, maxWidth: number, fontSize: number): 
     remainingText = remainingText.substring(lineLength).trim();
   }
 
+  logger.debug(`Text wrapped into ${lines.length} lines`);
   return lines;
 };
 
-// Draw text on the page
 const drawText = (
   page: any,
   text: string,
@@ -125,7 +136,7 @@ const drawText = (
       color: rgb(0, 0, 0),
     });
   } catch (e) {
-    console.warn('Falling back to standard font for:', text);
+    logger.warn('Failed to use Japanese font, falling back to standard font', { text });
     page.drawText(text, {
       x,
       y,
@@ -141,6 +152,7 @@ const createImagePage = (
   image: Awaited<ReturnType<typeof PDFDocument.prototype.embedPng>>,
   dimensions: ImageDimensions
 ): PDFPage => {
+  logger.debug('Creating image page');
   const page = pdfDoc.addPage([PAGE_CONFIG.WIDTH, PAGE_CONFIG.HEIGHT]);
   page.drawImage(image, dimensions);
   return page;
@@ -154,9 +166,11 @@ const layoutSection = (
   yOffset: number,
   fonts: FontConfig
 ): { page: PDFPage; yOffset: number } => {
+  logger.debug('Laying out section', { title: section.title });
   let page = currentPage;
 
   if (shouldCreateNewPage(yOffset)) {
+    logger.debug('Creating new page for section continuation');
     ({ page, yOffset } = createNewInfoPage(pdfDoc));
     pages.push(page);
   }
@@ -173,6 +187,7 @@ const layoutSection = (
 
   for (const line of contentLines) {
     if (shouldCreateNewPage(yOffset)) {
+      logger.debug('Creating new page for content continuation');
       ({ page, yOffset } = createNewInfoPage(pdfDoc));
       pages.push(page);
     }
@@ -203,6 +218,7 @@ const createInfoPage = (
   sections: { title: string; content: string }[],
   fonts: FontConfig
 ): PDFPage[] => {
+  logger.debug('Creating information pages');
   const pages: PDFPage[] = [];
   let { page, yOffset } = createNewInfoPage(pdfDoc);
   pages.push(page);
@@ -211,6 +227,7 @@ const createInfoPage = (
     ({ page, yOffset } = layoutSection(pdfDoc, pages, page, section, yOffset, fonts));
   });
 
+  logger.debug(`Created ${pages.length} information pages`);
   return pages;
 };
 
@@ -231,16 +248,28 @@ export const shareAsPDF = async (
   startTag: string,
   styleModifications: string
 ): Promise<true> => {
-  const logger = new Logger('shareAsPDF');
-
-  if (!imageData) throw new Error('Image data is required');
-  if (!url) throw new Error('URL is required');
+  logger.log('Starting PDF generation process');
+  
+  if (!imageData) {
+    logger.error('PDF generation failed: Image data is missing');
+    throw new Error('Image data is required');
+  }
+  if (!url) {
+    logger.error('PDF generation failed: URL is missing');
+    throw new Error('URL is required');
+  }
 
   try {
+    logger.log('Creating PDF document');
     const pdfDoc = await PDFDocument.create();
+    
+    logger.debug('Initializing fonts');
     const fonts = await initializeFonts(pdfDoc);
+    
+    logger.debug('Processing image');
     const { image, dimensions } = await calculateImageDimensions(pdfDoc, imageData);
 
+    logger.log('Adding image page to PDF');
     createImagePage(pdfDoc, image, dimensions);
 
     const now = new Date();
@@ -251,18 +280,24 @@ export const shareAsPDF = async (
       { title: 'Comment: ', content: comment },
     ];
 
+    logger.log('Adding information pages to PDF');
     createInfoPage(pdfDoc, sections, fonts);
 
+    logger.debug('Generating final PDF bytes');
     const pdfBytes = await pdfDoc.save({
       useObjectStreams: false,
       addDefaultPage: false,
     });
 
     const pdfBlob = new Blob([pdfBytes], { type: 'application/pdf' });
-    await downloadFile(pdfBlob, generateFilename(now, 'pdf'), {
+    const filename = generateFilename(now, 'pdf');
+    
+    logger.log('Initiating PDF download', { filename });
+    await downloadFile(pdfBlob, filename, {
       saveAs: false,
     });
 
+    logger.log('PDF generation and download completed successfully');
     return true;
   } catch (error) {
     logger.error('PDF generation and download failed:', error);

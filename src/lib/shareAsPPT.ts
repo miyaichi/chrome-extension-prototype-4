@@ -3,6 +3,8 @@ import { downloadFile } from '../utils/download';
 import { formatTimestamp, generateFilename } from '../utils/formatters';
 import { Logger } from './logger';
 
+const logger = new Logger('shareAsPPT');
+
 interface ImageDimensions {
   width: number;
   height: number;
@@ -42,6 +44,10 @@ const SlideStyle: Record<string, SlideStyleOptions> = {
 };
 
 const calculateImageDimensions = (img: HTMLImageElement): ImageDimensions => {
+  logger.debug('Calculating image dimensions', {
+    originalSize: { width: img.width, height: img.height }
+  });
+
   const imgRatio = img.width / img.height;
   const slideRatio = SLIDE_CONFIG.WIDTH / SLIDE_CONFIG.HEIGHT;
   const availableWidth = SLIDE_CONFIG.WIDTH * SLIDE_CONFIG.IMAGE_SCALE;
@@ -61,54 +67,101 @@ const calculateImageDimensions = (img: HTMLImageElement): ImageDimensions => {
   const x = (SLIDE_CONFIG.WIDTH - width) / 2;
   const y = (SLIDE_CONFIG.HEIGHT - height) / 2;
 
-  return { width, height, x, y };
+  const dimensions = { width, height, x, y };
+  logger.debug('Image dimensions calculated', {
+    scaledSize: { width, height },
+    position: { x, y }
+  });
+
+  return dimensions;
 };
 
 const getImageDimensions = (base64ImageData: string): Promise<ImageDimensions> => {
+  logger.debug('Starting image dimension calculation');
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => {
-      const dimensions = calculateImageDimensions(img);
-      resolve(dimensions);
+      try {
+        const dimensions = calculateImageDimensions(img);
+        logger.debug('Image dimensions retrieved successfully');
+        resolve(dimensions);
+      } catch (error) {
+        logger.error('Failed to calculate image dimensions:', error);
+        reject(error);
+      }
     };
-    img.onerror = () => reject(new Error('Failed to load image'));
+    img.onerror = () => {
+      const error = new Error('Failed to load image');
+      logger.error('Image loading failed');
+      reject(error);
+    };
     img.src = base64ImageData;
   });
 };
 
 const generatePPTX = async (pptxData: string): Promise<Blob> => {
-  const byteCharacters = atob(pptxData);
-  const byteArray = new Uint8Array(byteCharacters.split('').map((char) => char.charCodeAt(0)));
-  return new Blob([byteArray], { type: DEFAULTS.MIME_TYPE });
+  logger.debug('Generating PPTX blob from base64 data');
+  try {
+    const byteCharacters = atob(pptxData);
+    const byteArray = new Uint8Array(byteCharacters.split('').map((char) => char.charCodeAt(0)));
+    const blob = new Blob([byteArray], { type: DEFAULTS.MIME_TYPE });
+    logger.debug('PPTX blob generated successfully', {
+      size: blob.size
+    });
+    return blob;
+  } catch (error) {
+    logger.error('Failed to generate PPTX blob:', error);
+    throw error;
+  }
 };
 
 const createScreenshotSlide = async (pres: pptxgen, imageData: string) => {
-  const slide = pres.addSlide();
-  const imageDims = await getImageDimensions(imageData);
-  slide.addImage({
-    data: imageData,
-    x: imageDims.x,
-    y: imageDims.y,
-    w: imageDims.width,
-    h: imageDims.height,
-  });
+  logger.debug('Creating screenshot slide');
+  try {
+    const slide = pres.addSlide();
+    const imageDims = await getImageDimensions(imageData);
+    
+    slide.addImage({
+      data: imageData,
+      x: imageDims.x,
+      y: imageDims.y,
+      w: imageDims.width,
+      h: imageDims.height,
+    });
+    
+    logger.debug('Screenshot slide created successfully');
+  } catch (error) {
+    logger.error('Failed to create screenshot slide:', error);
+    throw error;
+  }
 };
 
 const createInfoSlide = (pres: pptxgen, sections: SlideSection[]) => {
-  const slide = pres.addSlide();
-  const texts = sections.map((section) => [
-    { text: section.title, options: SlideStyle.titleStyle },
-    { text: section.content, options: SlideStyle.contentStyle },
-  ]);
-
-  slide.addText(texts.flat(), {
-    x: SLIDE_CONFIG.TEXT_MARGIN,
-    y: SLIDE_CONFIG.TEXT_MARGIN,
-    w: '95%',
-    h: '90%',
-    valign: 'top',
-    margin: 10,
+  logger.debug('Creating information slide', {
+    sectionCount: sections.length
   });
+
+  try {
+    const slide = pres.addSlide();
+    const texts = sections.map((section) => [
+      { text: section.title, options: SlideStyle.titleStyle },
+      { text: section.content, options: SlideStyle.contentStyle },
+    ]);
+
+    slide.addText(texts.flat(), {
+      x: SLIDE_CONFIG.TEXT_MARGIN,
+      y: SLIDE_CONFIG.TEXT_MARGIN,
+      w: '95%',
+      h: '90%',
+      valign: 'top',
+      margin: 10,
+    });
+
+    logger.debug('Information slide created successfully');
+  } catch (error) {
+    logger.error('Failed to create information slide:', error);
+    throw error;
+  }
 };
 
 /**
@@ -128,19 +181,28 @@ export const shareAsPPT = async (
   startTag: string,
   styleModifications: string
 ): Promise<true> => {
-  const logger = new Logger('shareAsPPT');
+  logger.log('Starting PowerPoint generation process');
 
-  if (!imageData) throw new Error('Image data is required');
-  if (!url) throw new Error('URL is required');
+  if (!imageData) {
+    logger.error('PowerPoint generation failed: Image data is missing');
+    throw new Error('Image data is required');
+  }
+  if (!url) {
+    logger.error('PowerPoint generation failed: URL is missing');
+    throw new Error('URL is required');
+  }
 
   try {
+    logger.log('Initializing PowerPoint presentation');
     const pres = new pptxgen();
     pres.layout = DEFAULTS.LAYOUT;
 
+    logger.debug('Processing image data');
     const base64ImageData = imageData.startsWith('data:image/')
       ? imageData
       : `data:image/png;base64,${imageData}`;
 
+    logger.log('Creating screenshot slide');
     await createScreenshotSlide(pres, base64ImageData);
 
     const now = new Date();
@@ -151,18 +213,27 @@ export const shareAsPPT = async (
       { title: 'Comment: ', content: comment },
     ];
 
+    logger.log('Creating information slide');
     createInfoSlide(pres, sections);
 
+    logger.debug('Generating PowerPoint output');
     const pptxOutput = await pres.write({ outputType: 'base64' });
     if (typeof pptxOutput !== 'string') {
-      throw new Error('PowerPoint generation failed: Invalid output type');
+      const error = new Error('PowerPoint generation failed: Invalid output type');
+      logger.error(error.message);
+      throw error;
     }
 
+    logger.debug('Converting PowerPoint to downloadable format');
     const pptxBlob = await generatePPTX(pptxOutput);
-    await downloadFile(pptxBlob, generateFilename(now, 'pptx'), {
+    
+    const filename = generateFilename(now, 'pptx');
+    logger.log('Initiating PowerPoint download', { filename });
+    await downloadFile(pptxBlob, filename, {
       saveAs: false,
     });
 
+    logger.log('PowerPoint generation and download completed successfully');
     return true;
   } catch (error) {
     logger.error('PowerPoint generation and download failed:', error);

@@ -20,7 +20,7 @@ class BackgroundService {
   }
 
   private async initialize() {
-    logger.debug('Initializing BackgroundService...');
+    logger.log('Initializing BackgroundService...');
     logger.debug('Setting background context...');
     this.manager.setContext('background');
     logger.debug('Setting up event handlers...');
@@ -30,9 +30,6 @@ class BackgroundService {
     await this.setupSidePanel();
   }
 
-  /**
-   * Sets up event handlers for the background service
-   */
   private setupEventHandlers() {
     // Debugging message handler
     this.manager.subscribe('DEBUG', (message: Message) => {
@@ -43,24 +40,18 @@ class BackgroundService {
       );
     });
 
-    // Tab capture handler
     this.manager.subscribe('CAPTURE_TAB', this.captureTab.bind(this));
 
-    // Extension installation/update handler
     chrome.runtime.onInstalled.addListener(() => {
       logger.log('Extension installed/updated');
       this.setupSidePanel();
     });
 
-    // Browser events
     chrome.action.onClicked.addListener(this.toggleSidePanel);
     chrome.tabs.onActivated.addListener(this.handleTabActivated.bind(this));
     chrome.tabs.onUpdated.addListener(this.handleTabUpdated.bind(this));
   }
 
-  /**
-   * Captures the current tab and sends the image data back to the requester
-   */
   private async captureTab(message: Message) {
     try {
       const [tab] = await chrome.tabs.query({
@@ -97,9 +88,6 @@ class BackgroundService {
     }
   }
 
-  /**
-   * Handles tab activation events
-   */
   private async handleTabActivated({ tabId, windowId }: chrome.tabs.TabActiveInfo) {
     try {
       const tab = await chrome.tabs.get(tabId);
@@ -119,21 +107,15 @@ class BackgroundService {
     }
   }
 
-  /**
-   * Handles tab update events
-   */
   private async handleTabUpdated(
     tabId: number,
     changeInfo: chrome.tabs.TabChangeInfo,
     tab: chrome.tabs.Tab
   ) {
-    // Check if the URL has changed or the page has completed loading
     if (changeInfo.url || changeInfo.status === 'complete') {
       try {
-        // Get the current tab information
         const updatedTab = await chrome.tabs.get(tabId);
 
-        // Create the update payload
         const updateInfo = {
           tabId,
           windowId: tab.windowId,
@@ -143,10 +125,7 @@ class BackgroundService {
           isUrlChange: Boolean(changeInfo.url),
         };
 
-        // Log the update
-        logger.debug('Tab updated:', updateInfo);
-
-        // Broadcast the update to all listeners
+        logger.log('Tab updated:', updateInfo);
         await this.manager.sendMessage('TAB_UPDATED', updateInfo);
         logger.debug('TAB_UPDATED message sent successfully');
       } catch (error) {
@@ -155,9 +134,6 @@ class BackgroundService {
     }
   }
 
-  /**
-   * Sets up the side panel configuration
-   */
   private async setupSidePanel() {
     try {
       await chrome.sidePanel.setOptions({
@@ -170,20 +146,16 @@ class BackgroundService {
     }
   }
 
-  /**
-   * Toggles the side panel visibility
-   */
   private toggleSidePanel = (tab: chrome.tabs.Tab) => {
     chrome.sidePanel.open({ windowId: tab.windowId }, () => {
       const error = chrome.runtime.lastError;
       if (error) {
         logger.error('Failed to open side panel:', error);
       } else {
-        logger.debug('Side panel opened successfully');
+        logger.log('Side panel opened successfully');
       }
     });
   };
 }
 
-// Initialize the background service
 new BackgroundService();

@@ -39,18 +39,11 @@ const manager = ConnectionManager.getInstance();
 let currentTabId: number;
 let selectionModeEnabled = false;
 
-/**
- * Updates the cursor style based on the selection mode
- * @param enabled - Boolean indicating whether selection mode is enabled
- */
 const updateCursorStyle = (enabled: boolean): void => {
   document.body.style.cursor = enabled ? 'crosshair' : '';
+  logger.debug(`Cursor style updated: ${enabled ? 'crosshair' : 'default'}`);
 };
 
-/**
- * Saves the original styles of an element before applying highlight styles
- * @param element - The HTML element to save the styles for
- */
 const saveElementStyle = (element: HTMLElement): void => {
   if (styleMap.has(currentTabId)) {
     restoreElementStyle();
@@ -62,17 +55,22 @@ const saveElementStyle = (element: HTMLElement): void => {
   });
 
   styleMap.set(currentTabId, { originalStyles, element });
+  logger.debug('Original element styles saved', { tabId: currentTabId });
 };
 
 const applyHighlightStyle = (element: HTMLElement): void => {
   Object.entries(HIGHLIGHT_STYLES).forEach(([prop, value]) => {
     element.style[prop as StyleProperty] = value;
   });
+  logger.debug('Highlight styles applied to element');
 };
 
 const restoreElementStyle = (): void => {
   const storedStyle = styleMap.get(currentTabId);
-  if (!storedStyle) return;
+  if (!storedStyle) {
+    logger.debug('No stored styles found to restore');
+    return;
+  }
 
   const { element, originalStyles } = storedStyle;
   Object.entries(originalStyles).forEach(([prop, value]) => {
@@ -82,11 +80,17 @@ const restoreElementStyle = (): void => {
   });
 
   styleMap.delete(currentTabId);
+  logger.debug('Element styles restored and cleared from storage');
 };
 
-// Element selection handling
 const handleElementSelection = (element: HTMLElement): void => {
   const elementInfo = createElementInfo(element);
+  logger.log('Element selected', { 
+    tagName: element.tagName,
+    id: element.id,
+    classes: element.className
+  });
+  
   saveElementStyle(element);
   applyHighlightStyle(element);
   sendMessage(DOM_SELECTION_EVENTS.ELEMENT_SELECTED, { elementInfo });
@@ -96,22 +100,24 @@ const handleElementClick = (event: MouseEvent): void => {
   if (!selectionModeEnabled) return;
 
   const element = event.target as HTMLElement;
-  if (!element || element === document.body) return;
+  if (!element || element === document.body) {
+    logger.debug('Invalid element clicked or body element');
+    return;
+  }
 
   event.preventDefault();
   event.stopPropagation();
   handleElementSelection(element);
 };
 
-// Cleanup
 const cleanup = (): void => {
+  logger.log('Performing content script cleanup');
   restoreElementStyle();
   document.removeEventListener('click', handleElementClick, true);
 };
 
-// Message handlers
 const handleSelectionModeToggle = (message: Message<SelectionModePayload>): void => {
-  logger.debug('Selection mode changed:', message.payload.enabled);
+  logger.log('Selection mode changed:', message.payload.enabled);
   selectionModeEnabled = message.payload.enabled;
   updateCursorStyle(selectionModeEnabled);
 
@@ -123,38 +129,41 @@ const handleSelectionModeToggle = (message: Message<SelectionModePayload>): void
 const handleSelectElement = (message: Message<SelectElementPayload>): void => {
   const element = getElementByPath(message.payload.path);
   if (!element) {
-    logger.warn('Failed to find element with path:', message.payload.path);
+    logger.error('Failed to find element with path:', message.payload.path);
     return;
   }
+  logger.log('Element found by path, processing selection');
   handleElementSelection(element);
 };
 
 const handleClearSelection = (): void => {
+  logger.log('Clearing element selection');
   restoreElementStyle();
   sendMessage(DOM_SELECTION_EVENTS.ELEMENT_UNSELECTED, { timestamp: Date.now() });
 };
 
-// Initialization
 const initialize = (): void => {
+  logger.log('Initializing content script');
   manager.setContext('content');
 
-  // Set up message subscriptions
   subscribe(DOM_SELECTION_EVENTS.TOGGLE_SELECTION_MODE, handleSelectionModeToggle);
   subscribe<SelectElementPayload>(DOM_SELECTION_EVENTS.SELECT_ELEMENT, handleSelectElement);
   subscribe(DOM_SELECTION_EVENTS.CLEAR_SELECTION, handleClearSelection);
 
-  // Set up event listeners
   document.addEventListener('click', handleElementClick, true);
+  logger.debug('Event listeners registered');
 
-  // Set up cleanup on disconnect
   chrome.runtime.onConnect.addListener((port) => {
+    logger.debug('Port connection established');
     port.onDisconnect.addListener(cleanup);
   });
 
-  // Get current tab ID
   chrome.runtime.sendMessage({ type: 'GET_CURRENT_TAB' }, (response) => {
     currentTabId = response.tabId;
+    logger.log('Current tab ID retrieved:', currentTabId);
   });
+  
+  logger.log('Content script initialization complete');
 };
 
 initialize();
