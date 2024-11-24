@@ -32,55 +32,50 @@ const STYLE_PROPERTIES: StyleProperty[] = ['backgroundColor', 'outline', 'border
 
 // State declarations
 const logger = new Logger('ContentScript');
-const styleMap = new Map<number, ElementStyle>();
 const { sendMessage, subscribe } = useConnectionManager();
 const manager = ConnectionManager.getInstance();
 
-let currentTabId: number;
 let selectionModeEnabled = false;
+let lastSelectedElement: HTMLElement | null = null;
 
 const updateCursorStyle = (enabled: boolean): void => {
   document.body.style.cursor = enabled ? 'crosshair' : '';
   logger.debug(`Cursor style updated: ${enabled ? 'crosshair' : 'default'}`);
 };
 
-const saveElementStyle = (element: HTMLElement): void => {
-  if (styleMap.has(currentTabId)) {
-    restoreElementStyle();
-  }
-
-  const originalStyles: Partial<Pick<CSSStyleDeclaration, StyleProperty>> = {};
-  STYLE_PROPERTIES.forEach((prop) => {
-    originalStyles[prop] = element.style[prop];
-  });
-
-  styleMap.set(currentTabId, { originalStyles, element });
-  logger.debug('Original element styles saved', { tabId: currentTabId });
-};
-
-const applyHighlightStyle = (element: HTMLElement): void => {
+const saveAndHighlightElement = (element: HTMLElement): void => {
+  // 前の要素のスタイルを復元
+  restoreElementStyle();
+  
+  // 新しい要素の元のスタイルを保存して、ハイライトを適用
+  lastSelectedElement = element;
+  
+  // ハイライトスタイルを適用
   Object.entries(HIGHLIGHT_STYLES).forEach(([prop, value]) => {
     element.style[prop as StyleProperty] = value;
   });
-  logger.debug('Highlight styles applied to element');
+  
+  logger.debug('Element highlighted', { 
+    tagName: element.tagName,
+    id: element.id,
+    classes: element.className
+  });
 };
 
 const restoreElementStyle = (): void => {
-  const storedStyle = styleMap.get(currentTabId);
-  if (!storedStyle) {
-    logger.debug('No stored styles found to restore');
+  if (!lastSelectedElement) {
     return;
   }
 
-  const { element, originalStyles } = storedStyle;
-  Object.entries(originalStyles).forEach(([prop, value]) => {
-    if (value !== undefined && prop in element.style) {
-      element.style[prop as StyleProperty] = value;
+  // スタイルをデフォルトに戻す
+  STYLE_PROPERTIES.forEach((prop) => {
+    if (lastSelectedElement) {
+      lastSelectedElement.style[prop] = '';
     }
   });
 
-  styleMap.delete(currentTabId);
-  logger.debug('Element styles restored and cleared from storage');
+  lastSelectedElement = null;
+  logger.debug('Element styles restored');
 };
 
 const handleElementSelection = (element: HTMLElement): void => {
@@ -91,8 +86,7 @@ const handleElementSelection = (element: HTMLElement): void => {
     classes: element.className
   });
   
-  saveElementStyle(element);
-  applyHighlightStyle(element);
+  saveAndHighlightElement(element);
   sendMessage(DOM_SELECTION_EVENTS.ELEMENT_SELECTED, { elementInfo });
 };
 
@@ -156,11 +150,6 @@ const initialize = (): void => {
   chrome.runtime.onConnect.addListener((port) => {
     logger.debug('Port connection established');
     port.onDisconnect.addListener(cleanup);
-  });
-
-  chrome.runtime.sendMessage({ type: 'GET_CURRENT_TAB' }, (response) => {
-    currentTabId = response.tabId;
-    logger.log('Current tab ID retrieved:', currentTabId);
   });
   
   logger.log('Content script initialization complete');
