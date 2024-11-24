@@ -17,6 +17,8 @@ import {
 } from '../types/domSelection';
 import './App.css';
 
+const logger = new Logger('SidePanel');
+
 export const App = () => {
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -24,7 +26,6 @@ export const App = () => {
   const [selectedElement, setSelectedElement] = useState<ElementInfo | null>(null);
   const [styleModifications, setStyleModifications] = useState<StyleModification[]>([]);
   const { sendMessage, subscribe } = useConnectionManager();
-  const logger = new Logger('SidePanel');
 
   // Cleanup
   const cleanup = () => {

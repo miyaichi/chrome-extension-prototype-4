@@ -2,10 +2,11 @@
 import { ConnectionManager, Message } from './lib/connectionManager';
 import { Logger } from './lib/logger';
 
+const logger = new Logger('background');
+
 class BackgroundService {
   private static instance: BackgroundService | null = null;
   private manager: ConnectionManager;
-  private logger = new Logger('background');
 
   constructor() {
     this.manager = ConnectionManager.getInstance();
@@ -19,12 +20,12 @@ class BackgroundService {
   }
 
   private async initialize() {
-    this.logger.debug('Initializing BackgroundService...');
-    this.logger.debug('Setting background context...');
+    logger.debug('Initializing BackgroundService...');
+    logger.debug('Setting background context...');
     this.manager.setContext('background');
-    this.logger.debug('Setting up event handlers...');
+    logger.debug('Setting up event handlers...');
     await this.setupEventHandlers();
-    this.logger.log('BackgroundService initialization complete');
+    logger.log('BackgroundService initialization complete');
 
     await this.setupSidePanel();
   }
@@ -36,7 +37,7 @@ class BackgroundService {
     // Debugging message handler
     this.manager.subscribe('DEBUG', (message: Message) => {
       const timestamp = new Date(message.timestamp).toISOString();
-      this.logger.debug(
+      logger.debug(
         `[${timestamp}] ${message.source} -> ${message.target || 'broadcast'}: ${message.type}`,
         message.payload
       );
@@ -47,7 +48,7 @@ class BackgroundService {
 
     // Extension installation/update handler
     chrome.runtime.onInstalled.addListener(() => {
-      this.logger.log('Extension installed/updated');
+      logger.log('Extension installed/updated');
       this.setupSidePanel();
     });
 
@@ -83,7 +84,7 @@ class BackgroundService {
         message.source
       );
     } catch (error) {
-      this.logger.error('Failed to capture tab:', error);
+      logger.error('Failed to capture tab:', error);
       await this.manager.sendMessage(
         'CAPTURE_TAB_RESULT',
         {
@@ -102,7 +103,7 @@ class BackgroundService {
   private async handleTabActivated({ tabId, windowId }: chrome.tabs.TabActiveInfo) {
     try {
       const tab = await chrome.tabs.get(tabId);
-      this.logger.debug('Tab info retrieved:', tab);
+      logger.debug('Tab info retrieved:', tab);
 
       if (tab) {
         await this.manager.sendMessage('TAB_ACTIVATED', {
@@ -111,10 +112,10 @@ class BackgroundService {
           url: tab.url || '',
           title: tab.title || '',
         });
-        this.logger.debug('TAB_ACTIVATED message sent successfully');
+        logger.debug('TAB_ACTIVATED message sent successfully');
       }
     } catch (error) {
-      this.logger.error('Tab update handling error:', error);
+      logger.error('Tab update handling error:', error);
     }
   }
 
@@ -143,13 +144,13 @@ class BackgroundService {
         };
 
         // Log the update
-        this.logger.debug('Tab updated:', updateInfo);
+        logger.debug('Tab updated:', updateInfo);
 
         // Broadcast the update to all listeners
         await this.manager.sendMessage('TAB_UPDATED', updateInfo);
-        this.logger.debug('TAB_UPDATED message sent successfully');
+        logger.debug('TAB_UPDATED message sent successfully');
       } catch (error) {
-        this.logger.error('Tab update handling error:', error);
+        logger.error('Tab update handling error:', error);
       }
     }
   }
@@ -163,9 +164,9 @@ class BackgroundService {
         enabled: true,
         path: 'sidepanel.html',
       });
-      this.logger.log('Side panel settings updated');
+      logger.log('Side panel settings updated');
     } catch (error) {
-      this.logger.error('Failed to setup side panel:', error);
+      logger.error('Failed to setup side panel:', error);
     }
   }
 
@@ -176,9 +177,9 @@ class BackgroundService {
     chrome.sidePanel.open({ windowId: tab.windowId }, () => {
       const error = chrome.runtime.lastError;
       if (error) {
-        this.logger.error('Failed to open side panel:', error);
+        logger.error('Failed to open side panel:', error);
       } else {
-        this.logger.debug('Side panel opened successfully');
+        logger.debug('Side panel opened successfully');
       }
     });
   };
