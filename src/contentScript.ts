@@ -1,6 +1,5 @@
 import { ConnectionManager, Message } from './lib/connectionManager';
 import { Logger } from './lib/logger';
-import { DOM_SELECTION_EVENTS } from './types/domSelection';
 import { createElementInfo, getElementByPath } from './utils/domSelection';
 
 const logger = new Logger('contentScript');
@@ -23,11 +22,11 @@ class ContentScript {
   }
 
   private async initialize() {
-    logger.log('Initializing ContentScript...');
+    logger.log('Initializing ...');
     this.manager.setContext('content');
     this.injectStyles();
     this.setupEventHandlers();
-    logger.log('ContentScript initialization complete');
+    logger.log('initialization complete');
   }
 
   private injectStyles() {
@@ -79,18 +78,18 @@ class ContentScript {
     document.addEventListener('click', this.handleClick.bind(this), true);
 
     // Message subscribers
-    this.manager.subscribe(DOM_SELECTION_EVENTS.TOGGLE_SELECTION_MODE, (message: Message) => {
+    this.manager.subscribe('TOGGLE_SELECTION_MODE', (message: Message) => {
       this.toggleSelectionMode(message.payload.enabled);
     });
 
-    this.manager.subscribe(DOM_SELECTION_EVENTS.SELECT_ELEMENT, (message: Message) => {
+    this.manager.subscribe('SELECT_ELEMENT', (message: Message) => {
       const element = getElementByPath(message.payload.path);
       if (element) {
         this.handleElementSelection(element as HTMLElement);
       }
     });
 
-    this.manager.subscribe(DOM_SELECTION_EVENTS.CLEAR_SELECTION, () => {
+    this.manager.subscribe('CLEAR_SELECTION', () => {
       this.clearSelection();
     });
   }
@@ -145,7 +144,7 @@ class ContentScript {
     element.classList.remove('extension-highlight');
     element.classList.add('extension-selected');
 
-    this.manager.sendMessage(DOM_SELECTION_EVENTS.ELEMENT_SELECTED, {
+    this.manager.sendMessage('ELEMENT_SELECTED', {
       elementInfo: elementInfo,
     });
   }
@@ -185,11 +184,11 @@ class ContentScript {
 
 // Ensure single instance
 if (!window.contentScriptInitialized) {
-  logger.log('Initializing content script...');
+  logger.log('Initializing ...');
   window.contentScriptInitialized = true;
   new ContentScript();
 } else {
-  logger.log('Content script already initialized');
+  logger.log('Already initialized');
 }
 
 // TypeScript type declaration for window object

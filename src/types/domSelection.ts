@@ -40,8 +40,6 @@ export const DOM_SELECTION_EVENTS = {
 
 /** Constants for UI related events */
 export const UI_EVENTS = {
-  /** Event for when the side panel is closed */
-  SIDE_PANEL_CLOSED: 'SIDE_PANEL_CLOSED',
   /** Event for capturing a tab */
   CAPTURE_TAB: 'CAPTURE_TAB',
   /** Event for the result of capturing a tab */
@@ -52,8 +50,6 @@ export const UI_EVENTS = {
 export const BROWSER_EVENTS = {
   /** Event for when a tab is activated */
   TAB_ACTIVATED: 'TAB_ACTIVATED',
-  /** Event for when a tab is updated */
-  TAB_UPDATED: 'TAB_UPDATED',
 } as const;
 
 /** Type representing a DOM selection event */

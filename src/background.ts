@@ -1,14 +1,15 @@
-// src/background.ts
+// src/background/background.ts
 import { ConnectionManager, Message } from './lib/connectionManager';
 import { Logger } from './lib/logger';
 
-const logger = new Logger('background');
+const logger = new Logger('Background');
 
 class BackgroundService {
   private static instance: BackgroundService | null = null;
   private manager: ConnectionManager;
+  private activeTabId: number | null = null;
 
-  constructor() {
+  private constructor() {
     this.manager = ConnectionManager.getInstance();
 
     if (BackgroundService.instance) {
@@ -19,37 +20,37 @@ class BackgroundService {
     this.initialize();
   }
 
-  private async initialize() {
-    logger.log('Initializing BackgroundService...');
-    logger.debug('Setting background context...');
-    this.manager.setContext('background');
-    logger.debug('Setting up event handlers...');
-    await this.setupEventHandlers();
-    logger.log('BackgroundService initialization complete');
-
-    await this.setupSidePanel();
+  public static getInstance(): BackgroundService {
+    if (!BackgroundService.instance) {
+      BackgroundService.instance = new BackgroundService();
+    }
+    return BackgroundService.instance;
   }
 
-  private setupEventHandlers() {
-    // Debugging message handler
-    this.manager.subscribe('DEBUG', (message: Message) => {
-      const timestamp = new Date(message.timestamp).toISOString();
-      logger.debug(
-        `[${timestamp}] ${message.source} -> ${message.target || 'broadcast'}: ${message.type}`,
-        message.payload
-      );
-    });
+  // Initialize
+  private async initialize(): Promise<void> {
+    logger.log('Initializing ...');
+    this.setupInstallListener();
+    this.setupMessageSubscription();
+    this.setupTabListeners();
+    this.setupWindowListeners();
+    await this.initializeActiveTab();
+    await this.initializeSidePanel();
+    logger.log('initialization complete');
+  }
 
-    this.manager.subscribe('CAPTURE_TAB', this.captureTab.bind(this));
-
+  private setupInstallListener(): void {
     chrome.runtime.onInstalled.addListener(() => {
-      logger.log('Extension installed/updated');
-      this.setupSidePanel();
+      logger.log('Extension installed');
     });
+    chrome.action.onClicked.addListener((tab) => {
+      chrome.sidePanel.open({ windowId: tab.windowId });
+    });
+  }
 
-    chrome.action.onClicked.addListener(this.toggleSidePanel);
-    chrome.tabs.onActivated.addListener(this.handleTabActivated.bind(this));
-    chrome.tabs.onUpdated.addListener(this.handleTabUpdated.bind(this));
+  private setupMessageSubscription(): void {
+    this.manager.setContext('background');
+    this.manager.subscribe('CAPTURE_TAB', this.captureTab.bind(this));
   }
 
   private async captureTab(message: Message) {
@@ -88,74 +89,65 @@ class BackgroundService {
     }
   }
 
-  private async handleTabActivated({ tabId, windowId }: chrome.tabs.TabActiveInfo) {
-    try {
-      const tab = await chrome.tabs.get(tabId);
-      logger.debug('Tab info retrieved:', tab);
+  private setupTabListeners(): void {
+    chrome.tabs.onActivated.addListener(async (activeInfo) => {
+      logger.debug('Tab activated:', activeInfo.tabId);
+      this.activeTabId = activeInfo.tabId;
+      await this.handleTabChange(activeInfo.tabId);
+    });
 
-      if (tab) {
-        await this.manager.sendMessage('TAB_ACTIVATED', {
-          tabId,
-          windowId,
-          url: tab.url || '',
-          title: tab.title || '',
-        });
-        logger.debug('TAB_ACTIVATED message sent successfully');
-      }
-    } catch (error) {
-      logger.error('Tab update handling error:', error);
-    }
-  }
-
-  private async handleTabUpdated(
-    tabId: number,
-    changeInfo: chrome.tabs.TabChangeInfo,
-    tab: chrome.tabs.Tab
-  ) {
-    if (changeInfo.url || changeInfo.status === 'complete') {
-      try {
-        const updatedTab = await chrome.tabs.get(tabId);
-
-        const updateInfo = {
-          tabId,
-          windowId: tab.windowId,
-          url: updatedTab.url,
-          title: updatedTab.title,
-          isReload: changeInfo.status === 'complete',
-          isUrlChange: Boolean(changeInfo.url),
-        };
-
-        logger.log('Tab updated:', updateInfo);
-        await this.manager.sendMessage('TAB_UPDATED', updateInfo);
-        logger.debug('TAB_UPDATED message sent successfully');
-      } catch (error) {
-        logger.error('Tab update handling error:', error);
-      }
-    }
-  }
-
-  private async setupSidePanel() {
-    try {
-      await chrome.sidePanel.setOptions({
-        enabled: true,
-        path: 'sidepanel.html',
-      });
-      logger.log('Side panel settings updated');
-    } catch (error) {
-      logger.error('Failed to setup side panel:', error);
-    }
-  }
-
-  private toggleSidePanel = (tab: chrome.tabs.Tab) => {
-    chrome.sidePanel.open({ windowId: tab.windowId }, () => {
-      const error = chrome.runtime.lastError;
-      if (error) {
-        logger.error('Failed to open side panel:', error);
-      } else {
-        logger.log('Side panel opened successfully');
+    chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
+      if (tabId === this.activeTabId && changeInfo.status === 'complete') {
+        this.activeTabId = tabId;
+        logger.debug('Tab updated:', tabId);
+        await this.handleTabChange(tabId);
       }
     });
-  };
+  }
+
+  private setupWindowListeners(): void {
+    chrome.windows.onFocusChanged.addListener(async (windowId) => {
+      if (windowId !== chrome.windows.WINDOW_ID_NONE) {
+        logger.debug('Window focus changed:', windowId);
+        const tabs = await chrome.tabs.query({ active: true, windowId });
+        if (tabs[0]) {
+          this.activeTabId = tabs[0].id ?? null;
+          if (this.activeTabId) {
+            await this.handleTabChange(this.activeTabId);
+          }
+        }
+      }
+    });
+  }
+
+  private async initializeActiveTab(): Promise<void> {
+    try {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (tab?.id) {
+        this.activeTabId = tab.id;
+        await this.handleTabChange(tab.id);
+      }
+    } catch (error) {
+      logger.error('Failed to initialize active tab:', error);
+    }
+  }
+
+  private async handleTabChange(tabId: number): Promise<void> {
+    logger.debug('Handling tab change:', tabId);
+    try {
+      await this.manager.sendMessage('TAB_ACTIVATED', { timestamp: Date.now() });
+    } catch (error) {
+      logger.error('Failed to send TAB_ACTIVATED message:', error);
+    }
+  }
+
+  private async initializeSidePanel(): Promise<void> {
+    try {
+      await chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
+    } catch (error) {
+      logger.error('Failed to set panel behavior:', error);
+    }
+  }
 }
 
-new BackgroundService();
+const backgroundService = BackgroundService.getInstance();
