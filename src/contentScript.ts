@@ -73,12 +73,12 @@ class ContentScript {
   }
 
   private setupEventHandlers() {
-    // マウスイベントハンドラー
+    // Mouse event listeners
     document.addEventListener('mouseover', this.handleMouseOver.bind(this), true);
     document.addEventListener('mouseout', this.handleMouseOut.bind(this), true);
     document.addEventListener('click', this.handleClick.bind(this), true);
 
-    // メッセージハンドラー
+    // Message subscribers
     this.manager.subscribe(DOM_SELECTION_EVENTS.TOGGLE_SELECTION_MODE, (message: Message) => {
       this.toggleSelectionMode(message.payload.enabled);
     });
@@ -132,21 +132,21 @@ class ContentScript {
   }
 
   private handleElementSelection(element: HTMLElement) {
-    const elementInfo = createElementInfo(element);
-    logger.debug('Element selected:', elementInfo);
-
-    // 既存の選択をクリア
+    // Clear previously selected elements
     const selectedElements = document.querySelectorAll('.extension-selected');
-    selectedElements.forEach(el => {
+    selectedElements.forEach((el) => {
       el.classList.remove('extension-selected');
     });
 
-    // 新しい要素を選択状態に
+    const elementInfo = createElementInfo(element);
+    logger.debug('Element selected:', elementInfo);
+
+    // Highlight selected element
     element.classList.remove('extension-highlight');
     element.classList.add('extension-selected');
 
     this.manager.sendMessage(DOM_SELECTION_EVENTS.ELEMENT_SELECTED, {
-      elementInfo: elementInfo
+      elementInfo: elementInfo,
     });
   }
 
@@ -154,9 +154,9 @@ class ContentScript {
     if (this.isSelectionMode === enabled) return;
 
     this.isSelectionMode = enabled;
-    
+
     if (!enabled) {
-      this.clearSelection(); // 選択モードを無効にする時だけクリア
+      this.clearSelection();
     }
 
     document.documentElement.classList.toggle('extension-selection-mode', enabled);
@@ -164,7 +164,9 @@ class ContentScript {
 
     logger.debug('Selection mode toggled:', {
       enabled: this.isSelectionMode,
-      hasSelectionModeClass: document.documentElement.classList.contains('extension-selection-mode')
+      hasSelectionModeClass: document.documentElement.classList.contains(
+        'extension-selection-mode'
+      ),
     });
   }
 
@@ -173,9 +175,9 @@ class ContentScript {
       this.hoveredElement.classList.remove('extension-highlight');
       this.hoveredElement = null;
     }
-    // 選択された要素のクリアも追加
+    // Clear selected elements
     const selectedElements = document.querySelectorAll('.extension-selected');
-    selectedElements.forEach(element => {
+    selectedElements.forEach((element) => {
       element.classList.remove('extension-selected');
     });
   }
