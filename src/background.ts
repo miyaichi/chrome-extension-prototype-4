@@ -2,6 +2,19 @@
 import { ConnectionManager, Message } from './lib/connectionManager';
 import { Logger } from './lib/logger';
 
+// Message types definition
+interface CaptureTabResult {
+  success: boolean;
+  imageDataUrl?: string | null;
+  error?: string;
+  url?: string | null;
+}
+
+type BackgroundMessage =
+  | { type: 'CAPTURE_TAB'; payload: { timestamp: number } }
+  | { type: 'CAPTURE_TAB_RESULT'; payload: CaptureTabResult }
+  | { type: 'INITIALIZE_CONTENT'; payload: { timestamp: number } };
+
 const logger = new Logger('Background');
 
 class BackgroundService {
@@ -11,15 +24,10 @@ class BackgroundService {
 
   private constructor() {
     this.manager = ConnectionManager.getInstance();
-
-    if (BackgroundService.instance) {
-      return BackgroundService.instance;
-    }
-    BackgroundService.instance = this;
-
     this.initialize();
   }
 
+  // Singleton instance getter
   public static getInstance(): BackgroundService {
     if (!BackgroundService.instance) {
       BackgroundService.instance = new BackgroundService();
@@ -27,18 +35,23 @@ class BackgroundService {
     return BackgroundService.instance;
   }
 
-  // Initialize
+  // Initialize the background service
   private async initialize(): Promise<void> {
-    logger.log('Initializing ...');
-    this.setupInstallListener();
-    this.setupMessageSubscription();
-    this.setupTabListeners();
-    this.setupWindowListeners();
-    await this.initializeActiveTab();
-    await this.initializeSidePanel();
-    logger.log('initialization complete');
+    logger.log('Initializing Background Service...');
+    try {
+      this.setupInstallListener();
+      this.setupMessageSubscription();
+      this.setupTabListeners();
+      this.setupWindowListeners();
+      await this.initializeActiveTab();
+      await this.initializeSidePanel();
+      logger.log('Initialization complete');
+    } catch (error) {
+      logger.error('Initialization failed:', error);
+    }
   }
 
+  // Extension installed listener
   private setupInstallListener(): void {
     chrome.runtime.onInstalled.addListener(() => {
       logger.log('Extension installed');
@@ -48,17 +61,17 @@ class BackgroundService {
     });
   }
 
+  // Message subscription
   private setupMessageSubscription(): void {
     this.manager.setContext('background');
-    this.manager.subscribe('CAPTURE_TAB', this.captureTab.bind(this));
+    this.manager.subscribe<BackgroundMessage>('CAPTURE_TAB', this.captureTab.bind(this));
   }
 
-  private async captureTab(message: Message) {
+  // Capture the visible tab and send the result back to the content script
+  private async captureTab(message: Message): Promise<void> {
+    logger.log('Received CAPTURE_TAB message');
     try {
-      const [tab] = await chrome.tabs.query({
-        active: true,
-        currentWindow: true,
-      });
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
       const windowId = tab.windowId;
 
       const imageDataUrl = await chrome.tabs.captureVisibleTab(windowId, {
@@ -66,29 +79,37 @@ class BackgroundService {
         quality: 100,
       });
 
-      await this.manager.sendMessage(
+      logger.log('Tab captured successfully');
+      await this.manager.sendMessage<BackgroundMessage>(
         'CAPTURE_TAB_RESULT',
         {
-          success: true,
-          imageDataUrl: imageDataUrl,
-          url: tab.url || null,
+          type: 'CAPTURE_TAB_RESULT',
+          payload: {
+            success: true,
+            imageDataUrl: imageDataUrl,
+            url: tab.url || null,
+          },
         },
         message.source
       );
     } catch (error) {
       logger.error('Failed to capture tab:', error);
-      await this.manager.sendMessage(
+      await this.manager.sendMessage<BackgroundMessage>(
         'CAPTURE_TAB_RESULT',
         {
-          success: false,
-          error: (error as Error).message,
-          url: null,
+          type: 'CAPTURE_TAB_RESULT',
+          payload: {
+            success: false,
+            error: (error as Error).message,
+            url: null,
+          },
         },
         message.source
       );
     }
   }
 
+  // Tab activated listener
   private setupTabListeners(): void {
     chrome.tabs.onActivated.addListener(async (activeInfo) => {
       logger.debug('Tab activated:', activeInfo.tabId);
@@ -98,13 +119,13 @@ class BackgroundService {
 
     chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
       if (tabId === this.activeTabId && changeInfo.status === 'complete') {
-        this.activeTabId = tabId;
         logger.debug('Tab updated:', tabId);
         await this.handleTabChange(tabId);
       }
     });
   }
 
+  // Window event listeners setup
   private setupWindowListeners(): void {
     chrome.windows.onFocusChanged.addListener(async (windowId) => {
       if (windowId !== chrome.windows.WINDOW_ID_NONE) {
@@ -120,6 +141,7 @@ class BackgroundService {
     });
   }
 
+  // Initialize the active tab
   private async initializeActiveTab(): Promise<void> {
     try {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -132,15 +154,20 @@ class BackgroundService {
     }
   }
 
+  // Active tab change handler
   private async handleTabChange(tabId: number): Promise<void> {
     logger.debug('Handling tab change:', tabId);
     try {
-      await this.manager.sendMessage('INITIALIZE_CONTENT', { timestamp: Date.now() });
+      await this.manager.sendMessage<BackgroundMessage>('INITIALIZE_CONTENT', {
+        type: 'INITIALIZE_CONTENT',
+        payload: { timestamp: Date.now() },
+      });
     } catch (error) {
       logger.error('Failed to send INITIALIZE_CONTENT message:', error);
     }
   }
 
+  // Initialize the side panel
   private async initializeSidePanel(): Promise<void> {
     try {
       await chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
@@ -150,4 +177,5 @@ class BackgroundService {
   }
 }
 
+// Singleton instance creation
 const backgroundService = BackgroundService.getInstance();
