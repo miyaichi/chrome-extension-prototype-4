@@ -6,12 +6,11 @@ import { loadSettings } from './settings';
  * Type representing the different message types that can be sent
  */
 export type MessageType =
-  | 'TAB_ACTIVATED'
+  | 'INITIALIZE_CONTENT'
   | 'TOGGLE_SELECTION_MODE'
   | 'ELEMENT_SELECTED'
   | 'ELEMENT_UNSELECTED'
   | 'SELECT_ELEMENT'
-  | 'CLEAR_SELECTION'
   | 'UPDATE_ELEMENT_STYLE'
   | 'CAPTURE_TAB'
   | 'CAPTURE_TAB_RESULT'

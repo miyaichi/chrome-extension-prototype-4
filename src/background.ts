@@ -135,9 +135,9 @@ class BackgroundService {
   private async handleTabChange(tabId: number): Promise<void> {
     logger.debug('Handling tab change:', tabId);
     try {
-      await this.manager.sendMessage('TAB_ACTIVATED', { timestamp: Date.now() });
+      await this.manager.sendMessage('INITIALIZE_CONTENT', { timestamp: Date.now() });
     } catch (error) {
-      logger.error('Failed to send TAB_ACTIVATED message:', error);
+      logger.error('Failed to send INITIALIZE_CONTENT message:', error);
     }
   }
 

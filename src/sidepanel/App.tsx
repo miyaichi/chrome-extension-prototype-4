@@ -24,10 +24,9 @@ export const App = () => {
   // Cleanup
   const cleanup = () => {
     logger.log('Cleaning up');
-    setIsSelectionMode(false);
     setSelectedElement(null);
+    setIsSelectionMode(false);
     sendMessage('TOGGLE_SELECTION_MODE', { enabled: false });
-    sendMessage('CLEAR_SELECTION', { timestamp: Date.now() });
     if (showSettings) {
       setShowSettings(false);
     }
@@ -47,15 +46,6 @@ export const App = () => {
 
     logger.log('Monitoring visibility change');
     document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    // Monitor connection to the Chrome extension
-    const port = chrome.runtime.connect({ name: 'sidepanel' });
-    port.onDisconnect.addListener(cleanup);
-
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      port.disconnect();
-    };
   }, [isSelectionMode, showSettings]);
 
   // Message subscriptions
@@ -69,11 +59,6 @@ export const App = () => {
       subscribe('ELEMENT_UNSELECTED', () => {
         logger.log('Element unselected');
         setSelectedElement(null);
-      }),
-
-      subscribe('TAB_ACTIVATED', () => {
-        logger.log('Tab activated, cleaning up');
-        cleanup();
       }),
     ];
 
@@ -97,12 +82,9 @@ export const App = () => {
   };
 
   const toggleSelectionMode = () => {
-    const newMode = !isSelectionMode;
-    if (!newMode) {
-      sendMessage('CLEAR_SELECTION', { timestamp: Date.now() });
-    }
-    setIsSelectionMode(newMode);
-    sendMessage('TOGGLE_SELECTION_MODE', { enabled: newMode });
+    const enabled = !isSelectionMode;
+    setIsSelectionMode(enabled);
+    sendMessage('TOGGLE_SELECTION_MODE', { enabled: enabled });
   };
 
   return (

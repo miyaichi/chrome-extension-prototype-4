@@ -131,13 +131,6 @@ export const ShareCapture: React.FC<ShareCaptureProps> = ({
           selectedElement: null,
         }));
       }),
-
-      subscribe('TAB_ACTIVATED', () => {
-        setCaptureInfo((prev) => ({
-          ...prev,
-          selectedElement: null,
-        }));
-      }),
     ];
 
     return () => {

@@ -1,5 +1,6 @@
 import { ConnectionManager, Message } from './lib/connectionManager';
 import { Logger } from './lib/logger';
+import { ElementInfo } from './types/domSelection';
 import { createElementInfo, getElementByPath } from './utils/domSelection';
 
 const logger = new Logger('contentScript');
@@ -9,6 +10,7 @@ class ContentScript {
   private manager: ConnectionManager;
   private isSelectionMode = false;
   private hoveredElement: HTMLElement | null = null;
+  private selectedElementInfo: ElementInfo | null = null;
 
   constructor() {
     this.manager = ConnectionManager.getInstance();
@@ -89,7 +91,7 @@ class ContentScript {
       }
     });
 
-    this.manager.subscribe('CLEAR_SELECTION', () => {
+    this.manager.subscribe('INITIALIZE_CONTENT', () => {
       this.clearSelection();
     });
   }
@@ -137,15 +139,14 @@ class ContentScript {
       el.classList.remove('extension-selected');
     });
 
-    const elementInfo = createElementInfo(element);
-    logger.debug('Element selected:', elementInfo);
+    this.selectedElementInfo = createElementInfo(element);
+    logger.debug('Element selected:', this.selectedElementInfo);
 
-    // Highlight selected element
     element.classList.remove('extension-highlight');
     element.classList.add('extension-selected');
 
     this.manager.sendMessage('ELEMENT_SELECTED', {
-      elementInfo: elementInfo,
+      elementInfo: this.selectedElementInfo,
     });
   }
 
@@ -170,15 +171,25 @@ class ContentScript {
   }
 
   private clearSelection() {
+    // Clear hovered element
     if (this.hoveredElement) {
       this.hoveredElement.classList.remove('extension-highlight');
       this.hoveredElement = null;
     }
+
     // Clear selected elements
     const selectedElements = document.querySelectorAll('.extension-selected');
     selectedElements.forEach((element) => {
       element.classList.remove('extension-selected');
     });
+
+    // Clear selected element info
+    if (this.selectedElementInfo) {
+      this.manager.sendMessage('ELEMENT_UNSELECTED', {
+        elementInfo: this.selectedElementInfo,
+      });
+      this.selectedElementInfo = null;
+    }
   }
 }
 

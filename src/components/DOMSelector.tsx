@@ -63,11 +63,6 @@ export const DOMSelector: React.FC<DOMSelectorProps> = () => {
         logger.log('Element unselected');
         setSelectedElement(null);
       }),
-
-      subscribe('TAB_ACTIVATED', () => {
-        logger.log('Tab activated');
-        setSelectedElement(null);
-      }),
     ];
 
     // Clean up subscriptions
