@@ -2,19 +2,6 @@
 import { ConnectionManager, Message } from './lib/connectionManager';
 import { Logger } from './lib/logger';
 
-// Message types definition
-interface CaptureTabResult {
-  success: boolean;
-  imageDataUrl?: string | null;
-  error?: string;
-  url?: string | null;
-}
-
-type BackgroundMessage =
-  | { type: 'CAPTURE_TAB'; payload: { timestamp: number } }
-  | { type: 'CAPTURE_TAB_RESULT'; payload: CaptureTabResult }
-  | { type: 'INITIALIZE_CONTENT'; payload: { timestamp: number } };
-
 const logger = new Logger('Background');
 
 class BackgroundService {
@@ -64,7 +51,7 @@ class BackgroundService {
   // Message subscription
   private setupMessageSubscription(): void {
     this.manager.setContext('background');
-    this.manager.subscribe<BackgroundMessage>('CAPTURE_TAB', this.captureTab.bind(this));
+    this.manager.subscribe('CAPTURE_TAB', this.captureTab.bind(this));
   }
 
   // Capture the visible tab and send the result back to the content script
@@ -80,29 +67,23 @@ class BackgroundService {
       });
 
       logger.log('Tab captured successfully');
-      await this.manager.sendMessage<BackgroundMessage>(
+      await this.manager.sendMessage(
         'CAPTURE_TAB_RESULT',
         {
-          type: 'CAPTURE_TAB_RESULT',
-          payload: {
-            success: true,
-            imageDataUrl: imageDataUrl,
-            url: tab.url || null,
-          },
+          success: true,
+          imageDataUrl: imageDataUrl,
+          url: tab.url || null,
         },
         message.source
       );
     } catch (error) {
       logger.error('Failed to capture tab:', error);
-      await this.manager.sendMessage<BackgroundMessage>(
+      await this.manager.sendMessage(
         'CAPTURE_TAB_RESULT',
         {
-          type: 'CAPTURE_TAB_RESULT',
-          payload: {
-            success: false,
-            error: (error as Error).message,
-            url: null,
-          },
+          success: false,
+          error: (error as Error).message,
+          url: null,
         },
         message.source
       );
@@ -158,10 +139,7 @@ class BackgroundService {
   private async handleTabChange(tabId: number): Promise<void> {
     logger.debug('Handling tab change:', tabId);
     try {
-      await this.manager.sendMessage<BackgroundMessage>('INITIALIZE_CONTENT', {
-        type: 'INITIALIZE_CONTENT',
-        payload: { timestamp: Date.now() },
-      });
+      await this.manager.sendMessage('INITIALIZE_CONTENT', { timestamp: Date.now() });
     } catch (error) {
       logger.error('Failed to send INITIALIZE_CONTENT message:', error);
     }
