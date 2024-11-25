@@ -14,21 +14,26 @@ class ContentScript {
 
   constructor() {
     this.manager = ConnectionManager.getInstance();
-
-    if (ContentScript.instance) {
-      return ContentScript.instance;
-    }
-    ContentScript.instance = this;
-
     this.initialize();
+  }
+
+  public static getInstance(): ContentScript {
+    if (!ContentScript.instance) {
+      ContentScript.instance = new ContentScript();
+    }
+    return ContentScript.instance;
   }
 
   private async initialize() {
     logger.log('Initializing ...');
-    this.manager.setContext('content');
-    this.injectStyles();
-    this.setupEventHandlers();
-    logger.log('initialization complete');
+    try {
+      this.manager.setContext('content');
+      this.injectStyles();
+      this.setupEventHandlers();
+      logger.log('initialization complete');
+    } catch (error) {
+      logger.error('Initialization failed:', error);
+    }
   }
 
   private injectStyles() {
@@ -193,18 +198,10 @@ class ContentScript {
   }
 }
 
-// Ensure single instance
-if (!window.contentScriptInitialized) {
+const contentScriptInstances = new WeakMap<Window, ContentScript>();
+if (!contentScriptInstances.has(window)) {
   logger.log('Initializing ...');
-  window.contentScriptInitialized = true;
-  new ContentScript();
+  contentScriptInstances.set(window, new ContentScript());
 } else {
   logger.log('Already initialized');
-}
-
-// TypeScript type declaration for window object
-declare global {
-  interface Window {
-    contentScriptInitialized?: boolean;
-  }
 }

@@ -37,7 +37,7 @@ class BackgroundService {
 
   // Initialize the background service
   private async initialize(): Promise<void> {
-    logger.log('Initializing Background Service...');
+    logger.log('Initializing ...');
     try {
       this.setupInstallListener();
       this.setupMessageSubscription();
